@@ -3,7 +3,7 @@ Description=GlanceOS Backend
 After=network.target
 
 [Service]
-ExecStart=/usr/bin/python3 /home/pi/glanceos/backend/run.py
+ExecStart=/home/pi/glanceos/backend/venv/bin/python /home/pi/glanceos/backend/run.py
 WorkingDirectory=/home/pi/glanceos/backend
 Restart=always
 RestartSec=5

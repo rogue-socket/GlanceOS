@@ -3,7 +3,12 @@
 # Add to /etc/xdg/lxsession/LXDE-pi/autostart or equivalent
 
 # Wait for backend to be ready
-sleep 5
+for _ in {1..60}; do
+  if curl -fsS http://localhost:8000/api/health >/dev/null; then
+    break
+  fi
+  sleep 1
+done
 
 # Disable screen blanking
 xset s off
@@ -21,4 +26,4 @@ chromium-browser \
   --check-for-update-interval=31536000 \
   --disable-pinch \
   --overscroll-history-navigation=0 \
-  http://localhost:5173
+  http://localhost:8000

@@ -26,7 +26,15 @@ chmod +x setup.sh
 ./setup.sh
 ```
 
-This creates a Python venv, installs all dependencies, and copies `.env.example` to `.env`.
+This creates a Python venv, installs all dependencies, creates `backend/.env`, and prompts for API keys during setup.
+
+For non-interactive installs, export keys before running setup:
+
+```bash
+export WEATHER_API_KEY="your_openweathermap_key"
+export GITHUB_TOKEN="your_github_token"
+./setup.sh
+```
 
 Then start both services:
 
@@ -72,7 +80,8 @@ The dashboard starts at `http://localhost:5173` and proxies API/WebSocket reques
 
 ## Configuration
 
-Edit `backend/.env`:
+`setup.sh` now asks for API keys and writes them to `backend/.env`.
+You can still edit `backend/.env` manually:
 
 | Variable          | Description                          | Required |
 |-------------------|--------------------------------------|----------|
@@ -125,7 +134,7 @@ Backend (Python FastAPI + APScheduler)
 sudo cp deploy/glanceos-backend.service /etc/systemd/system/
 sudo systemctl enable --now glanceos-backend
 
-# Build the frontend for production
+# Build the frontend for production (served by FastAPI at :8000)
 cd frontend
 npm run build
 
@@ -133,6 +142,8 @@ npm run build
 chmod +x deploy/kiosk.sh
 deploy/kiosk.sh
 ```
+
+Production URL: `http://localhost:8000`
 
 ## Project Structure
 

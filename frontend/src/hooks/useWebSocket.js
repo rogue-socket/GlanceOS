@@ -1,17 +1,37 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 
-const WS_URL = `ws://${window.location.host}/ws`;
+function resolveWebSocketUrl() {
+  const envUrl = import.meta.env.VITE_WS_URL;
+  if (envUrl) return envUrl;
+
+  const { protocol, host } = window.location;
+  if (!host) return 'ws://localhost:8000/ws';
+
+  const wsProtocol = protocol === 'https:' ? 'wss:' : 'ws:';
+  return `${wsProtocol}//${host}/ws`;
+}
+
+const WS_URL = resolveWebSocketUrl();
 
 export function useWebSocket() {
   const [widgetData, setWidgetData] = useState({});
   const [connected, setConnected] = useState(false);
   const wsRef = useRef(null);
   const reconnectTimer = useRef(null);
+  const shouldReconnect = useRef(true);
 
   const connect = useCallback(() => {
     if (wsRef.current?.readyState === WebSocket.OPEN) return;
 
-    const ws = new WebSocket(WS_URL);
+    let ws;
+    try {
+      ws = new WebSocket(WS_URL);
+    } catch {
+      setConnected(false);
+      reconnectTimer.current = setTimeout(connect, 2000);
+      return;
+    }
+
     wsRef.current = ws;
 
     ws.onopen = () => {
@@ -35,7 +55,9 @@ export function useWebSocket() {
 
     ws.onclose = () => {
       setConnected(false);
-      reconnectTimer.current = setTimeout(connect, 2000);
+      if (shouldReconnect.current) {
+        reconnectTimer.current = setTimeout(connect, 2000);
+      }
     };
 
     ws.onerror = () => {
@@ -44,8 +66,10 @@ export function useWebSocket() {
   }, []);
 
   useEffect(() => {
+    shouldReconnect.current = true;
     connect();
     return () => {
+      shouldReconnect.current = false;
       if (reconnectTimer.current) clearTimeout(reconnectTimer.current);
       wsRef.current?.close();
     };
