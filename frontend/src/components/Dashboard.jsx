@@ -1,5 +1,5 @@
-import { useState, useCallback } from 'react';
-import { Responsive, WidthProvider } from 'react-grid-layout';
+import { useState, useCallback, useEffect, useRef } from 'react';
+import { Responsive } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 
@@ -13,8 +13,6 @@ import CricketWidget from './widgets/CricketWidget';
 import NewsWidget from './widgets/NewsWidget';
 import TrendingWidget from './widgets/TrendingWidget';
 import LofiWidget from './widgets/LofiWidget';
-
-const ResponsiveGrid = WidthProvider(Responsive);
 
 const STORAGE_KEY = 'glanceos-layouts';
 
@@ -69,6 +67,29 @@ export default function Dashboard() {
   const { widgetData, connected } = useWebSocket();
   const { theme, toggleTheme } = useTheme();
   const [layouts, setLayouts] = useState(loadLayouts);
+  const gridContainerRef = useRef(null);
+  const [gridWidth, setGridWidth] = useState(1200);
+
+  useEffect(() => {
+    const container = gridContainerRef.current;
+    if (!container) return;
+
+    const measure = () => {
+      const nextWidth = container.clientWidth || window.innerWidth || 1200;
+      setGridWidth(nextWidth);
+    };
+
+    measure();
+
+    if (typeof ResizeObserver !== 'undefined') {
+      const observer = new ResizeObserver(() => measure());
+      observer.observe(container);
+      return () => observer.disconnect();
+    }
+
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, []);
 
   const onLayoutChange = useCallback((_layout, allLayouts) => {
     setLayouts(allLayouts);
@@ -121,9 +142,10 @@ export default function Dashboard() {
       </header>
 
       {/* ── Tile grid ───────────────────────────────── */}
-      <div className="p-3">
-        <ResponsiveGrid
+      <div className="p-3" ref={gridContainerRef}>
+        <Responsive
           className="layout"
+          width={gridWidth}
           layouts={layouts}
           onLayoutChange={onLayoutChange}
           breakpoints={{ lg: 1200, md: 900, sm: 480 }}
@@ -161,7 +183,7 @@ export default function Dashboard() {
           <div key="github">
             <GitHubWidget data={widgetData.github} />
           </div>
-        </ResponsiveGrid>
+        </Responsive>
       </div>
     </div>
   );
