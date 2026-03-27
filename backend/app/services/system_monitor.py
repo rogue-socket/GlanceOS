@@ -1,12 +1,17 @@
 import psutil
 import platform
+import sys
 from datetime import datetime
+
+
+def _disk_path() -> str:
+    return "C:\\" if sys.platform == "win32" else "/"
 
 
 def get_system_stats() -> dict:
     cpu_percent = psutil.cpu_percent(interval=0.5)
     memory = psutil.virtual_memory()
-    disk = psutil.disk_usage("/")
+    disk = psutil.disk_usage(_disk_path())
 
     net = psutil.net_io_counters()
 
