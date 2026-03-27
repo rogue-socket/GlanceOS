@@ -1,0 +1,239 @@
+@import "tailwindcss";
+
+@theme {
+  --color-glance-bg: #0a0e1a;
+  --color-glance-surface: rgba(15, 23, 42, 0.75);
+  --color-glance-surface-solid: #0f172a;
+  --color-glance-border: rgba(51, 65, 85, 0.5);
+  --color-glance-text: #e2e8f0;
+  --color-glance-muted: #64748b;
+  --color-glance-accent: #38bdf8;
+  --color-glance-accent-dim: rgba(56, 189, 248, 0.12);
+  --color-glance-success: #34d399;
+  --color-glance-warning: #fbbf24;
+  --color-glance-danger: #f87171;
+  --color-glance-glow: rgba(56, 189, 248, 0.06);
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  src: url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap');
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  background: var(--color-glance-bg);
+}
+
+/* ── Grid layout ──────────────────────────────────── */
+.react-grid-layout {
+  position: relative;
+}
+
+.react-grid-item {
+  transition: all 250ms cubic-bezier(0.2, 0, 0, 1);
+  transition-property: left, top, width, height;
+}
+
+.react-grid-item.react-draggable-dragging {
+  transition: none;
+  z-index: 100;
+}
+
+.react-grid-item.react-draggable-dragging > .widget-tile {
+  box-shadow:
+    0 0 0 1px rgba(56, 189, 248, 0.3),
+    0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  transform: scale(1.01);
+}
+
+.react-grid-placeholder {
+  background: rgba(56, 189, 248, 0.08);
+  border: 1px dashed rgba(56, 189, 248, 0.3);
+  border-radius: 1rem;
+  opacity: 1;
+}
+
+/* ── Resize handle ────────────────────────────────── */
+.react-grid-item > .react-resizable-handle {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  bottom: 4px;
+  right: 4px;
+  cursor: se-resize;
+  z-index: 10;
+}
+
+.react-grid-item > .react-resizable-handle::after {
+  content: '';
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid rgba(56, 189, 248, 0.25);
+  border-bottom: 2px solid rgba(56, 189, 248, 0.25);
+  border-radius: 0 0 2px 0;
+  transition: border-color 0.2s;
+}
+
+.react-grid-item:hover > .react-resizable-handle::after {
+  border-color: rgba(56, 189, 248, 0.5);
+}
+
+.react-grid-item.resizing > .react-resizable-handle::after {
+  border-color: rgba(56, 189, 248, 0.8);
+}
+
+/* ── Widget tile base ─────────────────────────────── */
+.widget-tile {
+  height: 100%;
+  border-radius: 1rem;
+  background: var(--color-glance-surface);
+  backdrop-filter: blur(16px) saturate(1.4);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  border: 1px solid var(--color-glance-border);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  transition: box-shadow 0.3s, border-color 0.3s;
+}
+
+.widget-tile:hover {
+  border-color: rgba(56, 189, 248, 0.2);
+  box-shadow:
+    0 0 0 1px rgba(56, 189, 248, 0.05),
+    0 4px 24px -4px rgba(0, 0, 0, 0.3);
+}
+
+/* Inner glow line at top */
+.widget-tile::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 1.5rem;
+  right: 1.5rem;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.15), transparent);
+  pointer-events: none;
+}
+
+/* ── Widget header ────────────────────────────────── */
+.widget-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.875rem 1rem 0.375rem;
+  flex-shrink: 0;
+}
+
+.widget-header .widget-icon {
+  font-size: 0.75rem;
+  opacity: 0.8;
+}
+
+.widget-header .widget-title {
+  font-size: 0.625rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--color-glance-muted);
+}
+
+/* ── Widget body ──────────────────────────────────── */
+.widget-body {
+  flex: 1;
+  padding: 0.25rem 1rem 0.75rem;
+  overflow: auto;
+  min-height: 0;
+}
+
+/* ── Scrollbar ────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(51, 65, 85, 0.4);
+  border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(51, 65, 85, 0.7);
+}
+
+/* ── Lofi special tile ────────────────────────────── */
+.lofi-widget.widget-tile {
+  background:
+    radial-gradient(ellipse at 30% 20%, rgba(56, 189, 248, 0.04) 0%, transparent 60%),
+    var(--color-glance-surface);
+}
+
+.lofi-widget.widget-tile::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 1rem;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.04) 2px,
+    rgba(0, 0, 0, 0.04) 4px
+  );
+}
+
+/* ── Light theme ──────────────────────────────────── */
+[data-theme="light"] {
+  --color-glance-bg: #f1f5f9;
+  --color-glance-surface: rgba(255, 255, 255, 0.85);
+  --color-glance-surface-solid: #ffffff;
+  --color-glance-border: rgba(203, 213, 225, 0.6);
+  --color-glance-text: #0f172a;
+  --color-glance-muted: #64748b;
+  --color-glance-accent: #0284c7;
+  --color-glance-accent-dim: rgba(2, 132, 199, 0.08);
+  --color-glance-glow: rgba(2, 132, 199, 0.04);
+}
+
+[data-theme="light"] .widget-tile {
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.03);
+}
+
+[data-theme="light"] .widget-tile::before {
+  background: linear-gradient(90deg, transparent, rgba(2, 132, 199, 0.1), transparent);
+}
+
+/* ── Utilities ────────────────────────────────────── */
+.line-clamp-1 {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
