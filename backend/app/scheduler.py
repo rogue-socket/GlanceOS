@@ -13,9 +13,11 @@ from app.services.cricket import fetch_cricket_scores
 from app.services.news import fetch_news
 from app.services.trending import fetch_github_trending
 from app.services.lofi import get_lofi_scene
+from app.config import get_settings
 from app.ws_manager import manager
 
 logger = logging.getLogger("glanceos.scheduler")
+settings = get_settings()
 
 scheduler = AsyncIOScheduler()
 
@@ -45,7 +47,7 @@ async def _push_system_stats() -> None:
 
 async def _push_weather() -> None:
     try:
-        data = await fetch_weather()
+        data = await fetch_weather(settings.weather_city)
         _cache["weather"] = data
         await manager.broadcast(data)
     except Exception:
@@ -54,7 +56,7 @@ async def _push_weather() -> None:
 
 async def _push_github() -> None:
     try:
-        data = await fetch_github_events()
+        data = await fetch_github_events(settings.github_username)
         _cache["github"] = data
         await manager.broadcast(data)
     except Exception:
@@ -107,14 +109,16 @@ async def _push_lofi() -> None:
 
 
 def start_scheduler() -> None:
+    now = datetime.utcnow()
+
     scheduler.add_job(_push_clock, "interval", seconds=1, id="clock")
     scheduler.add_job(_push_system_stats, "interval", seconds=3, id="system")
-    scheduler.add_job(_push_weather, "interval", minutes=10, id="weather")
-    scheduler.add_job(_push_github, "interval", minutes=5, id="github")
-    scheduler.add_job(_push_cricket, "interval", minutes=2, id="cricket")
-    scheduler.add_job(_push_news, "interval", minutes=15, id="news")
-    scheduler.add_job(_push_trending, "interval", minutes=30, id="trending")
-    scheduler.add_job(_push_lofi, "interval", seconds=30, id="lofi")
+    scheduler.add_job(_push_weather, "interval", minutes=10, id="weather", next_run_time=now)
+    scheduler.add_job(_push_github, "interval", minutes=5, id="github", next_run_time=now)
+    scheduler.add_job(_push_cricket, "interval", minutes=2, id="cricket", next_run_time=now)
+    scheduler.add_job(_push_news, "interval", minutes=15, id="news", next_run_time=now)
+    scheduler.add_job(_push_trending, "interval", minutes=30, id="trending", next_run_time=now)
+    scheduler.add_job(_push_lofi, "interval", seconds=30, id="lofi", next_run_time=now)
     scheduler.start()
     logger.info("Scheduler started")
 

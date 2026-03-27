@@ -105,12 +105,26 @@ fi
 echo "[*] Configure API keys (optional but recommended)..."
 CURRENT_WEATHER_KEY="$(read_env_value .env WEATHER_API_KEY)"
 CURRENT_GITHUB_TOKEN="$(read_env_value .env GITHUB_TOKEN)"
+CURRENT_WEATHER_CITY="$(read_env_value .env WEATHER_CITY)"
+CURRENT_GITHUB_USERNAME="$(read_env_value .env GITHUB_USERNAME)"
+
+if [ -z "$CURRENT_WEATHER_CITY" ]; then
+  CURRENT_WEATHER_CITY="Hyderabad,IN"
+fi
+
+if [ -z "$CURRENT_GITHUB_USERNAME" ]; then
+  CURRENT_GITHUB_USERNAME="octocat"
+fi
 
 WEATHER_KEY="$(prompt_key WEATHER_API_KEY "OpenWeatherMap API key" "$CURRENT_WEATHER_KEY")"
 GITHUB_TOKEN_VALUE="$(prompt_key GITHUB_TOKEN "GitHub personal access token" "$CURRENT_GITHUB_TOKEN")"
+WEATHER_CITY_VALUE="$(prompt_key WEATHER_CITY "Weather city (e.g. Hyderabad,IN)" "$CURRENT_WEATHER_CITY")"
+GITHUB_USERNAME_VALUE="$(prompt_key GITHUB_USERNAME "GitHub username for activity widget" "$CURRENT_GITHUB_USERNAME")"
 
 upsert_env_var .env WEATHER_API_KEY "$WEATHER_KEY"
 upsert_env_var .env GITHUB_TOKEN "$GITHUB_TOKEN_VALUE"
+upsert_env_var .env WEATHER_CITY "$WEATHER_CITY_VALUE"
+upsert_env_var .env GITHUB_USERNAME "$GITHUB_USERNAME_VALUE"
 
 if [ -z "$WEATHER_KEY" ] || [ -z "$GITHUB_TOKEN_VALUE" ]; then
   echo "[*] One or more API keys are empty. Related widgets will use sample/offline data."

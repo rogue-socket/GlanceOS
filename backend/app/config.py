@@ -5,6 +5,9 @@ from functools import lru_cache
 class Settings(BaseSettings):
     host: str = "0.0.0.0"
     port: int = 8000
+    log_level: str = "WARNING"
+    weather_city: str = "Hyderabad,IN"
+    github_username: str = "octocat"
     weather_api_key: str = ""
     github_token: str = ""
     database_url: str = "sqlite+aiosqlite:///./glanceos.db"

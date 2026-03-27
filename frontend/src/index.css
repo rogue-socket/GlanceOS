@@ -143,8 +143,30 @@ body {
 }
 
 .widget-header .widget-icon {
-  font-size: 0.75rem;
+  font-size: 0.625rem;
   opacity: 0.8;
+  display: inline-flex;
+  align-items: center;
+}
+
+.widget-icon-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.1rem;
+  height: 1.1rem;
+  padding: 0 0.35rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  background: rgba(56, 189, 248, 0.14);
+  color: var(--color-glance-accent);
+  font-size: 0.55rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.widget-icon-fallback {
+  font-size: 0.75rem;
 }
 
 .widget-header .widget-title {
@@ -161,6 +183,11 @@ body {
   padding: 0.25rem 1rem 0.75rem;
   overflow: auto;
   min-height: 0;
+}
+
+.widget-content {
+  min-height: 100%;
+  width: 100%;
 }
 
 /* ── Scrollbar ────────────────────────────────────── */

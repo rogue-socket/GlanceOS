@@ -25,6 +25,12 @@ function formatBytes(bytes) {
   return `${(bytes / Math.pow(k, i)).toFixed(1)} ${sizes[i]}`;
 }
 
+function formatTemp(tempData) {
+  const c = tempData?.cpu_c;
+  if (typeof c !== 'number') return 'N/A';
+  return `${c.toFixed(1)}°C`;
+}
+
 export default function SystemWidget({ data }) {
   if (!data) {
     return (
@@ -36,7 +42,7 @@ export default function SystemWidget({ data }) {
     );
   }
 
-  const { cpu, memory, disk } = data;
+  const { cpu, memory, disk, temperature } = data;
 
   return (
     <WidgetCard title="System" icon="💻">
@@ -48,6 +54,7 @@ export default function SystemWidget({ data }) {
             <span className="text-glance-text font-medium">{cpu.percent}%</span>
           </div>
           <ProgressBar value={cpu.percent} color={colorForPercent(cpu.percent)} />
+          <div className="text-[10px] text-glance-muted mt-1">Temp: {formatTemp(temperature)}</div>
         </div>
 
         {/* Memory */}

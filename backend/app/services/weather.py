@@ -5,7 +5,7 @@ from app.config import get_settings
 logger = logging.getLogger("glanceos.weather")
 
 
-async def fetch_weather(city: str = "London") -> dict:
+async def fetch_weather(city: str = "Hyderabad,IN") -> dict:
     """Fetch weather from OpenWeatherMap. Falls back to offline placeholder."""
     settings = get_settings()
     api_key = settings.weather_api_key

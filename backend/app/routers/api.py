@@ -8,6 +8,9 @@ from app.services.news import fetch_news
 from app.services.trending import fetch_github_trending
 from app.services.lofi import get_lofi_scene
 from app.scheduler import get_all_cached
+from app.config import get_settings
+
+settings = get_settings()
 
 router = APIRouter(prefix="/api")
 
@@ -31,12 +34,12 @@ async def system():
 
 
 @router.get("/weather")
-async def weather(city: str = "London"):
+async def weather(city: str = "Hyderabad,IN"):
     return await fetch_weather(city)
 
 
 @router.get("/github")
-async def github(username: str = "octocat"):
+async def github(username: str = settings.github_username):
     return await fetch_github_events(username)
 
 

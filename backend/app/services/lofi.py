@@ -135,9 +135,105 @@ r"""
     ),
 ]
 
+_ANIMATED_SCENES = [
+        {
+                "label": "spinning donut",
+                "frame_ms": 120,
+                "frames": [
+                        r'''
+            *
+        .-"""-.
+    .'  .-.  '.
+ /  .'   '.  \
+|  |  (_)  |  |
+ \  '.   .'  /
+    '.  '-'  .'
+        '-...-'
+''',
+                        r'''
+                            *
+        .-"""-.
+    .'  .-.  '.
+ /  .'   '.  \
+|  |  (_)  |  |
+ \  '.   .'  /
+    '.  '-'  .'
+        '-...-'
+''',
+                        r'''
+        .-"""-.
+    .'  .-.  '.
+ /  .'   '.  \
+|  |  (_)  |  |
+ \  '.   .'  /
+    '.  '-'  .'
+        '-...-'
+            *
+''',
+                        r'''
+        .-"""-.
+    .'  .-.  '.
+ /  .'   '.  \
+|  |  (_)  |  |   *
+ \  '.   .'  /
+    '.  '-'  .'
+        '-...-'
+''',
+                        r'''
+        .-"""-.
+    .'  .-.  '.
+ /  .'   '.  \
+|  |  (_)  |  |
+ \  '.   .'  /
+    '.  '-'  .'   *
+        '-...-'
+''',
+                        r'''
+        .-"""-.
+    .'  .-.  '.
+ /  .'   '.  \
+|  |  (_)  |  |
+ \  '.   .'  /
+    '.  '-'  .'
+*   '-...-'
+''',
+                        r'''
+        .-"""-.
+* .'  .-.  '.
+ /  .'   '.  \
+|  |  (_)  |  |
+ \  '.   .'  /
+    '.  '-'  .'
+        '-...-'
+''',
+                        r'''
+        .-"""-.
+    .'  .-.  '.
+* /  .'   '.  \
+|  |  (_)  |  |
+ \  '.   .'  /
+    '.  '-'  .'
+        '-...-'
+''',
+                ],
+        },
+]
+
 
 def get_lofi_scene() -> dict:
     """Return a random lofi ASCII art scene."""
+    if _ANIMATED_SCENES and random.random() < 0.35:
+        animated_scene = random.choice(_ANIMATED_SCENES)
+        return {
+            "type": "lofi",
+            "data": {
+                "frames": animated_scene["frames"],
+                "frame_ms": animated_scene["frame_ms"],
+                "label": animated_scene["label"],
+                "timestamp": datetime.utcnow().isoformat(),
+            },
+        }
+
     art, label = random.choice(_SCENES)
     return {
         "type": "lofi",
@@ -151,4 +247,14 @@ def get_lofi_scene() -> dict:
 
 def get_all_scenes() -> list[dict]:
     """Return all scenes for cycling."""
-    return [{"art": art, "label": label} for art, label in _SCENES]
+    scenes = [{"art": art, "label": label} for art, label in _SCENES]
+    scenes.extend(
+        {
+            "art": scene["frames"][0],
+            "label": scene["label"],
+            "frames": scene["frames"],
+            "frame_ms": scene["frame_ms"],
+        }
+        for scene in _ANIMATED_SCENES
+    )
+    return scenes

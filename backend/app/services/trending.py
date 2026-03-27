@@ -34,6 +34,9 @@ async def _fetch_trending_api(language: str, since: str) -> dict:
         resp.raise_for_status()
         raw = resp.json()
 
+    if not isinstance(raw, list) or len(raw) == 0:
+        raise ValueError("Trending API returned no repositories")
+
     repos = []
     for r in raw[:10]:
         repos.append({
@@ -45,6 +48,10 @@ async def _fetch_trending_api(language: str, since: str) -> dict:
             "today_stars": r.get("currentPeriodStars", r.get("todayStars", 0)),
             "url": r.get("url", r.get("html_url", "")),
         })
+
+    repos = [repo for repo in repos if repo["name"]]
+    if not repos:
+        raise ValueError("Trending API produced empty repository names")
 
     return {
         "type": "trending",

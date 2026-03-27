@@ -10,10 +10,17 @@ from app.config import get_settings
 from app.routers import api, ws
 from app.scheduler import start_scheduler, stop_scheduler
 
+settings = get_settings()
+log_level_name = settings.log_level.upper()
+log_level = getattr(logging, log_level_name, logging.WARNING)
+
 logging.basicConfig(
-    level=logging.INFO,
+    level=log_level,
     format="%(asctime)s [%(name)s] %(levelname)s: %(message)s",
 )
+
+for noisy_logger in ("uvicorn.access", "httpx", "apscheduler"):
+    logging.getLogger(noisy_logger).setLevel(logging.WARNING)
 
 
 @asynccontextmanager

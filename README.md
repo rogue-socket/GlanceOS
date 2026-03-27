@@ -87,8 +87,11 @@ You can still edit `backend/.env` manually:
 |-------------------|--------------------------------------|----------|
 | `WEATHER_API_KEY` | OpenWeatherMap API key               | No*      |
 | `GITHUB_TOKEN`    | GitHub personal access token         | No*      |
+| `WEATHER_CITY`    | Default weather city (e.g. Hyderabad,IN) | No |
+| `GITHUB_USERNAME` | GitHub username for activity widget  | No       |
 | `HOST`            | Backend bind address (default `0.0.0.0`) | No   |
 | `PORT`            | Backend port (default `8000`)        | No       |
+| `LOG_LEVEL`       | Backend log verbosity (default `WARNING`) | No |
 
 *Widgets show sample data when keys are not configured.
 

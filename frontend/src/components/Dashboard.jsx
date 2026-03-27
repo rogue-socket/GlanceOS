@@ -65,7 +65,7 @@ function saveLayouts(layouts) {
 
 export default function Dashboard() {
   const { widgetData, connected } = useWebSocket();
-  const { theme, toggleTheme } = useTheme();
+  const { theme, themePreference, toggleTheme } = useTheme();
   const [layouts, setLayouts] = useState(loadLayouts);
   const gridContainerRef = useRef(null);
   const [gridWidth, setGridWidth] = useState(1200);
@@ -134,8 +134,11 @@ export default function Dashboard() {
             <button
               onClick={toggleTheme}
               className="text-[11px] text-glance-muted hover:text-glance-text px-2.5 py-1 rounded-md hover:bg-glance-accent-dim transition-all cursor-pointer"
+              title="Cycle theme mode (Auto -> Light -> Dark)"
             >
-              {theme === 'dark' ? '☀ Light' : '☾ Dark'}
+              {themePreference === 'auto'
+                ? `Auto · ${theme === 'dark' ? 'Dark' : 'Light'}`
+                : `Manual · ${theme === 'dark' ? 'Dark' : 'Light'}`}
             </button>
           </div>
         </div>

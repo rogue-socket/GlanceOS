@@ -10,7 +10,11 @@ logger = logging.getLogger("glanceos.github")
 async def fetch_github_events(username: str = "octocat") -> dict:
     """Fetch GitHub events. Falls back to sample data on failure."""
     settings = get_settings()
-    headers = {}
+    username = (username or "octocat").strip() or "octocat"
+    headers = {
+        "Accept": "application/vnd.github+json",
+        "User-Agent": "GlanceOS/0.1",
+    }
     if settings.github_token:
         headers["Authorization"] = f"Bearer {settings.github_token}"
 
@@ -21,19 +25,24 @@ async def fetch_github_events(username: str = "octocat") -> dict:
             resp.raise_for_status()
             events = resp.json()
 
+        parsed_events = [
+            {
+                "id": e.get("id", f"evt-{idx}"),
+                "type": e.get("type", "Event"),
+                "repo": e.get("repo", {}).get("name", "unknown/repo"),
+                "created_at": e.get("created_at"),
+            }
+            for idx, e in enumerate(events[:10])
+        ]
+
+        if not parsed_events:
+            raise ValueError("GitHub returned no events")
+
         return {
             "type": "github",
             "data": {
                 "username": username,
-                "events": [
-                    {
-                        "id": e["id"],
-                        "type": e["type"],
-                        "repo": e["repo"]["name"],
-                        "created_at": e["created_at"],
-                    }
-                    for e in events[:10]
-                ],
+                "events": parsed_events,
                 "source": "live",
             },
         }

@@ -1,8 +1,86 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import WidgetCard from '../WidgetCard';
 
 // Client-side fallback scenes for instant display
+const SPINNING_DONUT_FRAMES = [
+  `
+      *
+    .-"""-.
+  .'  .-.  '.
+ /  .'   '.  \
+|  |  (_)  |  |
+ \  '.   .'  /
+  '.  '-'  .'
+    '-...-'
+`,
+  `
+              *
+    .-"""-.
+  .'  .-.  '.
+ /  .'   '.  \
+|  |  (_)  |  |
+ \  '.   .'  /
+  '.  '-'  .'
+    '-...-'
+`,
+  `
+    .-"""-.
+  .'  .-.  '.
+ /  .'   '.  \
+|  |  (_)  |  |
+ \  '.   .'  /
+  '.  '-'  .'
+    '-...-'
+      *
+`,
+  `
+    .-"""-.
+  .'  .-.  '.
+ /  .'   '.  \
+|  |  (_)  |  |   *
+ \  '.   .'  /
+  '.  '-'  .'
+    '-...-'
+`,
+  `
+    .-"""-.
+  .'  .-.  '.
+ /  .'   '.  \
+|  |  (_)  |  |
+ \  '.   .'  /
+  '.  '-'  .'   *
+    '-...-'
+`,
+  `
+    .-"""-.
+  .'  .-.  '.
+ /  .'   '.  \
+|  |  (_)  |  |
+ \  '.   .'  /
+  '.  '-'  .'
+*   '-...-'
+`,
+  `
+    .-"""-.
+* .'  .-.  '.
+ /  .'   '.  \
+|  |  (_)  |  |
+ \  '.   .'  /
+  '.  '-'  .'
+    '-...-'
+`,
+  `
+    .-"""-.
+  .'  .-.  '.
+* /  .'   '.  \
+|  |  (_)  |  |
+ \  '.   .'  /
+  '.  '-'  .'
+    '-...-'
+`,
+];
+
 const LOCAL_SCENES = [
   {
     art: `
@@ -70,11 +148,17 @@ const LOCAL_SCENES = [
   ---- === === ----`,
     label: 'window view',
   },
+  {
+    frames: SPINNING_DONUT_FRAMES,
+    label: 'spinning donut',
+    frameMs: 120,
+  },
 ];
 
 export default function LofiWidget({ data }) {
   const [sceneIdx, setSceneIdx] = useState(0);
   const [ticker, setTicker] = useState(0);
+  const [frameIdx, setFrameIdx] = useState(0);
 
   // Cycle through scenes every 12 seconds
   useEffect(() => {
@@ -89,9 +173,33 @@ export default function LofiWidget({ data }) {
     if (data?.art) {
       setTicker(t => t + 1);
     }
+    if (data?.frames) {
+      setTicker(t => t + 1);
+    }
   }, [data]);
 
-  const scene = data?.art ? data : LOCAL_SCENES[sceneIdx];
+  const scene = data?.art || data?.frames ? data : LOCAL_SCENES[sceneIdx];
+  const sceneFrames = useMemo(() => {
+    if (Array.isArray(scene?.frames) && scene.frames.length > 0) {
+      return scene.frames;
+    }
+    return [scene?.art || ''];
+  }, [scene]);
+  const frameMs = scene?.frameMs || scene?.frame_ms || 120;
+
+  useEffect(() => {
+    setFrameIdx(0);
+  }, [sceneIdx, ticker]);
+
+  useEffect(() => {
+    if (sceneFrames.length <= 1) return;
+
+    const id = setInterval(() => {
+      setFrameIdx(prev => (prev + 1) % sceneFrames.length);
+    }, frameMs);
+
+    return () => clearInterval(id);
+  }, [sceneFrames, frameMs]);
 
   return (
     <WidgetCard className="lofi-widget">
@@ -110,7 +218,7 @@ export default function LofiWidget({ data }) {
             className="text-glance-accent font-mono text-[9px] leading-[1.3] whitespace-pre select-none"
             style={{ textShadow: '0 0 8px rgba(56, 189, 248, 0.3)' }}
           >
-            {scene.art}
+            {sceneFrames[frameIdx] || ''}
           </motion.pre>
         </AnimatePresence>
 

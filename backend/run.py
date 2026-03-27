@@ -9,6 +9,8 @@ def main():
         host=settings.host,
         port=settings.port,
         reload=False,
+        access_log=False,
+        log_level=settings.log_level.lower(),
     )
 
 
