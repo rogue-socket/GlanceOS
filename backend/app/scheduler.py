@@ -40,7 +40,7 @@ async def _push_system_stats() -> None:
         _cache["system"] = data
         await manager.broadcast(data)
     except Exception:
-        logger.exception("Failed to push system stats")
+        logger.debug("Failed to push system stats")
 
 
 async def _push_weather() -> None:
@@ -49,7 +49,7 @@ async def _push_weather() -> None:
         _cache["weather"] = data
         await manager.broadcast(data)
     except Exception:
-        logger.exception("Failed to push weather")
+        logger.debug("Failed to push weather")
 
 
 async def _push_github() -> None:
@@ -58,7 +58,7 @@ async def _push_github() -> None:
         _cache["github"] = data
         await manager.broadcast(data)
     except Exception:
-        logger.exception("Failed to push GitHub events")
+        logger.debug("Failed to push GitHub events")
 
 
 async def _push_clock() -> None:
@@ -73,7 +73,7 @@ async def _push_cricket() -> None:
         _cache["cricket"] = data
         await manager.broadcast(data)
     except Exception:
-        logger.exception("Failed to push cricket scores")
+        logger.debug("Failed to push cricket scores")
 
 
 async def _push_news() -> None:
@@ -82,7 +82,7 @@ async def _push_news() -> None:
         _cache["news"] = data
         await manager.broadcast(data)
     except Exception:
-        logger.exception("Failed to push news")
+        logger.debug("Failed to push news")
 
 
 async def _push_trending() -> None:
@@ -91,7 +91,7 @@ async def _push_trending() -> None:
         _cache["trending"] = data
         await manager.broadcast(data)
     except Exception:
-        logger.exception("Failed to push trending")
+        logger.debug("Failed to push trending")
 
 
 async def _push_lofi() -> None:
@@ -100,7 +100,7 @@ async def _push_lofi() -> None:
         _cache["lofi"] = data
         await manager.broadcast(data)
     except Exception:
-        logger.exception("Failed to push lofi scene")
+        logger.debug("Failed to push lofi scene")
 
 
 # ── Lifecycle ─────────────────────────────────────────

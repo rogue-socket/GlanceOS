@@ -23,11 +23,15 @@ export default function WeatherWidget({ data }) {
     );
   }
 
-  if (data.error) {
+  if (data.source === 'offline') {
     return (
-      <WidgetCard title="Weather" icon="🌤️">
-        <div className="flex items-center justify-center h-full text-glance-muted text-sm">
-          {data.error}
+      <WidgetCard title={data.city || 'Weather'} icon="🌤️">
+        <div className="flex flex-col items-center justify-center h-full gap-1">
+          <div className="text-3xl">🌡️</div>
+          <div className="text-sm text-glance-muted">{data.description}</div>
+          <div className="text-[10px] text-glance-muted/50 mt-1">
+            Add WEATHER_API_KEY in .env for live data
+          </div>
         </div>
       </WidgetCard>
     );
