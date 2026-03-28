@@ -25,9 +25,14 @@ export default function NewsWidget({ data }) {
   const articles = data.articles || [];
   const isUnavailable = data.status === 'unavailable';
 
+  const feedSource = data.source || 'news';
+
   return (
     <WidgetCard title={`News · ${data.category || 'tech'}`} icon="news">
       <div className="flex flex-col gap-1.5 pt-1">
+        <div className="text-[10px] uppercase tracking-[0.12em] text-glance-muted/70">
+          source: {feedSource}
+        </div>
         {isUnavailable && (
           <div className="text-xs text-glance-muted bg-glance-accent-dim/20 border border-glance-border/40 rounded-md px-2 py-2">
             {data.reason || 'Live news unavailable right now'}
@@ -46,6 +51,11 @@ export default function NewsWidget({ data }) {
                 <div className="text-xs text-glance-text leading-snug line-clamp-2 group-hover:text-glance-accent transition-colors">
                   {article.crux || article.title}
                 </div>
+                {article.summary && (
+                  <div className="text-[11px] text-glance-text/85 leading-snug line-clamp-3 mt-0.5">
+                    {article.summary}
+                  </div>
+                )}
                 {article.crux && article.title && article.crux !== article.title && (
                   <div className="text-[10px] text-glance-muted/80 leading-snug line-clamp-1 mt-0.5">
                     {article.title}
@@ -95,7 +105,7 @@ export default function NewsWidget({ data }) {
         })}
         {data.llm_enriched && (
           <div className="text-[9px] text-glance-muted/60 text-center mt-1">
-            crux summarized by llm
+            content summarized by llm
           </div>
         )}
       </div>

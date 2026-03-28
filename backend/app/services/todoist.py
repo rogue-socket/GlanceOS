@@ -1,4 +1,5 @@
 import logging
+import time
 from datetime import datetime
 
 import httpx
@@ -6,6 +7,25 @@ import httpx
 from app.config import get_settings
 
 logger = logging.getLogger("glanceos.todoist")
+
+TODOIST_TASK_ENDPOINTS = [
+    ("todoist-api-v1", "https://api.todoist.com/api/v1/tasks"),
+]
+
+_last_fetch_error_key = ""
+_last_fetch_error_at = 0.0
+
+
+def _throttled_warning(key: str, message: str, window_seconds: float = 600.0) -> None:
+    global _last_fetch_error_key, _last_fetch_error_at
+
+    now = time.monotonic()
+    if key != _last_fetch_error_key or (now - _last_fetch_error_at) >= window_seconds:
+        logger.warning(message)
+        _last_fetch_error_key = key
+        _last_fetch_error_at = now
+    else:
+        logger.debug(message)
 
 
 def _parse_iso_datetime(value: str | None) -> datetime | None:
@@ -46,6 +66,50 @@ def _task_sort_key(task: dict) -> tuple[int, str, str]:
     return (due_rank, when, content)
 
 
+def _extract_tasks(payload: object) -> list[dict]:
+    if isinstance(payload, list):
+        return [item for item in payload if isinstance(item, dict)]
+
+    if isinstance(payload, dict):
+        for key in ("results", "items", "tasks"):
+            value = payload.get(key)
+            if isinstance(value, list):
+                return [item for item in value if isinstance(item, dict)]
+
+    return []
+
+
+def _truncate(text: str, limit: int = 180) -> str:
+    compact = " ".join((text or "").split())
+    if len(compact) <= limit:
+        return compact
+    return compact[: limit - 3] + "..."
+
+
+async def _fetch_tasks_with_fallback(
+    client: httpx.AsyncClient,
+    headers: dict[str, str],
+    params: dict[str, str | int],
+) -> tuple[list[dict], str]:
+    errors: list[str] = []
+
+    for source, url in TODOIST_TASK_ENDPOINTS:
+        try:
+            resp = await client.get(url, headers=headers, params=params)
+            resp.raise_for_status()
+            return _extract_tasks(resp.json()), source
+        except httpx.HTTPStatusError as exc:
+            status = exc.response.status_code
+            body = _truncate(exc.response.text)
+            errors.append(f"{source} status={status} body={body}")
+            continue
+        except Exception as exc:
+            errors.append(f"{source} error={exc}")
+            continue
+
+    raise RuntimeError("; ".join(errors) if errors else "Todoist request failed")
+
+
 async def fetch_todoist_tasks(project_id: str | None = None) -> dict:
     settings = get_settings()
 
@@ -67,19 +131,13 @@ async def fetch_todoist_tasks(project_id: str | None = None) -> dict:
     headers = {
         "Authorization": f"Bearer {token}",
     }
-    params = {}
+    params: dict[str, str | int] = {"limit": 50}
     if effective_project_id:
         params["project_id"] = effective_project_id
 
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
-            resp = await client.get(
-                "https://api.todoist.com/rest/v2/tasks",
-                headers=headers,
-                params=params,
-            )
-            resp.raise_for_status()
-            raw_tasks = resp.json()
+            raw_tasks, source = await _fetch_tasks_with_fallback(client, headers, params)
 
         raw_tasks = sorted(raw_tasks, key=_task_sort_key)
 
@@ -94,7 +152,7 @@ async def fetch_todoist_tasks(project_id: str | None = None) -> dict:
                     "priority": task.get("priority", 1),
                     "due": _format_due(task),
                     "project_id": task.get("project_id", ""),
-                    "url": f"https://todoist.com/showTask?id={task_id}",
+                    "url": f"https://app.todoist.com/app/task/{task_id}",
                 }
             )
 
@@ -102,13 +160,14 @@ async def fetch_todoist_tasks(project_id: str | None = None) -> dict:
             "type": "todo",
             "data": {
                 "tasks": tasks,
-                "source": "todoist-api",
+                "source": source,
                 "status": "connected",
                 "project_id": effective_project_id or None,
             },
         }
     except Exception as exc:
-        logger.warning("Todoist fetch failed: %s", exc)
+        error_key = f"todoist-fetch:{type(exc).__name__}:{str(exc)[:120]}"
+        _throttled_warning(error_key, f"Todoist fetch failed: {exc}")
 
     return {
         "type": "todo",

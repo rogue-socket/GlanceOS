@@ -136,7 +136,7 @@ Get your keys:
 | Weather    | OpenWeatherMap API    | 10 min          |
 | System     | psutil (CPU/RAM/Disk) | 3s              |
 | Cricket    | ESPN / CricAPI        | 2 min           |
-| News       | Google News RSS + optional LLM crux | 15 min |
+| News       | Hacker News + Google RSS + article-content summaries | 15 min |
 | Trending   | GitHub Trending       | 30 min          |
 | GitHub     | GitHub Events API     | 5 min           |
 | Calendar   | Google Calendar (ICS/API) | 5 min       |
