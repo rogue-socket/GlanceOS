@@ -10,14 +10,17 @@ logger = logging.getLogger("glanceos.todoist")
 
 TODOIST_TASK_ENDPOINTS = [
     ("todoist-api-v1", "https://api.todoist.com/api/v1/tasks"),
+    ("todoist-rest-v2-fallback", "https://api.todoist.com/rest/v2/tasks"),
 ]
 
 TODOIST_PROJECT_ENDPOINTS = [
-    ("todoist-rest-v2", "https://api.todoist.com/rest/v2/projects"),
+    ("todoist-api-v1", "https://api.todoist.com/api/v1/projects"),
+    ("todoist-rest-v2-fallback", "https://api.todoist.com/rest/v2/projects"),
 ]
 
 TODOIST_SECTION_ENDPOINTS = [
-    ("todoist-rest-v2", "https://api.todoist.com/rest/v2/sections"),
+    ("todoist-api-v1", "https://api.todoist.com/api/v1/sections"),
+    ("todoist-rest-v2-fallback", "https://api.todoist.com/rest/v2/sections"),
 ]
 
 _last_fetch_error_key = ""

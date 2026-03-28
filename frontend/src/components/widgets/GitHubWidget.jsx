@@ -1,6 +1,6 @@
 import WidgetCard from '../WidgetCard';
 
-const WEEKS_TO_SHOW = 53;
+const WEEKS_TO_SHOW = 10;
 
 const EVENT_LABELS = {
   PushEvent: 'PUSH',

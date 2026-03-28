@@ -6,6 +6,7 @@ from datetime import date, datetime, timedelta
 from app.config import get_settings
 
 logger = logging.getLogger("glanceos.github")
+CONTRIBUTION_WEEKS = 10
 
 
 async def fetch_github_events(username: str = "octocat") -> dict:
@@ -71,7 +72,7 @@ async def _fetch_contributions(
     client: httpx.AsyncClient, username: str, headers: dict[str, str]
 ) -> dict:
     today = date.today()
-    start = today - timedelta(days=7 * 53)
+    start = today - timedelta(days=7 * CONTRIBUTION_WEEKS)
     url = f"https://github.com/users/{username}/contributions"
 
     contribution_headers = {
@@ -153,7 +154,7 @@ async def _fetch_contributions(
         weeks.append(levels[idx : idx + 7])
 
     return {
-        "weeks": weeks[-53:],
+        "weeks": weeks[-CONTRIBUTION_WEEKS:],
         "max_level": 4,
         "from": start.isoformat(),
         "to": today.isoformat(),
