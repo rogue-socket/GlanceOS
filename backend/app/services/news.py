@@ -267,38 +267,6 @@ def _extract_content_text(html: str) -> str:
 
     return combined
 
-    async with httpx.AsyncClient(timeout=12.0, follow_redirects=True) as client:
-        response = await client.get(rss_url)
-        response.raise_for_status()
-        xml_text = response.text
-
-    root = ET.fromstring(xml_text)
-    items = root.findall("./channel/item")
-
-    articles: list[dict] = []
-    for item in items[:8]:
-        raw_title = (item.findtext("title") or "").strip()
-        title, inferred_source = _split_google_title(raw_title)
-        source = (item.findtext("source") or inferred_source or "Google News").strip()
-        url = (item.findtext("link") or "").strip()
-        published = (item.findtext("pubDate") or "").strip()
-        description = _clean_html(item.findtext("description") or "")
-
-        if not title:
-            continue
-
-        articles.append(
-            {
-                "title": title,
-                "source": source,
-                "url": url,
-                "published": published,
-                "description": description,
-            }
-        )
-
-    return articles
-
 
 async def _summarize_with_llm(articles: list[dict], category: str, settings) -> list[dict]:
     provider = (settings.news_llm_provider or "gemini").strip().lower()
