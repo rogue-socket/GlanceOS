@@ -24,7 +24,7 @@ const LANG_COLORS = {
 export default function TrendingWidget({ data }) {
   if (!data) {
     return (
-      <WidgetCard title="Trending" icon="🔥">
+      <WidgetCard title="Trending" icon="trending">
         <div className="flex items-center justify-center h-full text-glance-muted text-sm">
           Waiting for data…
         </div>
@@ -35,10 +35,15 @@ export default function TrendingWidget({ data }) {
   const repos = data.repos || [];
 
   return (
-    <WidgetCard title={`Trending · ${data.since || 'daily'}`} icon="🔥">
+    <WidgetCard title={`Trending · ${data.since || 'daily'}`} icon="trending">
       <div className="flex flex-col gap-1 pt-1">
+        <div className="text-[10px] text-glance-muted/70 uppercase tracking-[0.12em]">
+          Source: {data.source || 'live'}
+        </div>
         {repos.length === 0 && (
-          <div className="text-sm text-glance-muted text-center">No trending repos</div>
+          <div className="text-sm text-glance-muted text-center">
+            {data.error || 'No trending repositories right now'}
+          </div>
         )}
         {repos.map((repo, i) => (
           <div
@@ -67,9 +72,7 @@ export default function TrendingWidget({ data }) {
                     {repo.language}
                   </span>
                 )}
-                <span className="text-[10px] text-glance-muted">
-                  ★ {formatStars(repo.stars)}
-                </span>
+                <span className="text-[10px] text-glance-muted">Stars {formatStars(repo.stars)}</span>
                 {repo.today_stars > 0 && (
                   <span className="text-[10px] text-glance-success font-medium">
                     +{formatStars(repo.today_stars)} today
@@ -79,11 +82,6 @@ export default function TrendingWidget({ data }) {
             </div>
           </div>
         ))}
-        {data.source === 'sample' && (
-          <div className="text-[9px] text-glance-muted/50 text-center mt-1">
-            sample data
-          </div>
-        )}
       </div>
     </WidgetCard>
   );

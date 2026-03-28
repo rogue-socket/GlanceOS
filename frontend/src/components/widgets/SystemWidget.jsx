@@ -31,10 +31,16 @@ function formatTemp(tempData) {
   return `${c.toFixed(1)}°C`;
 }
 
+function formatTempSource(tempData) {
+  const source = tempData?.source;
+  if (!source || source === 'unavailable') return '';
+  return ` (${source})`;
+}
+
 export default function SystemWidget({ data }) {
   if (!data) {
     return (
-      <WidgetCard title="System" icon="💻">
+      <WidgetCard title="System" icon="system">
         <div className="flex items-center justify-center h-full text-glance-muted text-sm">
           Waiting for data…
         </div>
@@ -45,7 +51,7 @@ export default function SystemWidget({ data }) {
   const { cpu, memory, disk, temperature } = data;
 
   return (
-    <WidgetCard title="System" icon="💻">
+    <WidgetCard title="System" icon="system">
       <div className="flex flex-col gap-3 pt-1">
         {/* CPU */}
         <div>
@@ -54,7 +60,9 @@ export default function SystemWidget({ data }) {
             <span className="text-glance-text font-medium">{cpu.percent}%</span>
           </div>
           <ProgressBar value={cpu.percent} color={colorForPercent(cpu.percent)} />
-          <div className="text-[10px] text-glance-muted mt-1">Temp: {formatTemp(temperature)}</div>
+          <div className="text-[10px] text-glance-muted mt-1">
+            Temp: {formatTemp(temperature)}{formatTempSource(temperature)}
+          </div>
         </div>
 
         {/* Memory */}

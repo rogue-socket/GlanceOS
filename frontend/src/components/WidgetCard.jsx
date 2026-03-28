@@ -2,6 +2,14 @@ import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 
 const ICON_BADGE_MAP = {
+  system: 'SYS',
+  weather: 'WTH',
+  github: 'GIT',
+  cricket: 'CRT',
+  news: 'NWS',
+  trending: 'TRD',
+  lofi: 'LOF',
+  clock: 'CLK',
   '💻': 'SYS',
   '🌤️': 'WTH',
   '🐙': 'GIT',
@@ -14,15 +22,17 @@ function resolveHeadingIcon(icon) {
   if (!icon) return null;
   if (typeof icon !== 'string') return icon;
 
-  const badge = ICON_BADGE_MAP[icon];
+  const normalized = icon.trim().toLowerCase();
+  const badge = ICON_BADGE_MAP[icon] || ICON_BADGE_MAP[normalized];
   if (badge) {
     return <span className="widget-icon-badge">{badge}</span>;
   }
 
-  return <span className="widget-icon-fallback">{icon}</span>;
+  const shortCode = normalized.slice(0, 3).toUpperCase();
+  return <span className="widget-icon-badge">{shortCode || 'WGT'}</span>;
 }
 
-export default function WidgetCard({ title, icon, children, className = '' }) {
+export default function WidgetCard({ title, icon, children, className = '', scaleWithCard = true }) {
   const cardRef = useRef(null);
   const [contentScale, setContentScale] = useState(1);
 
@@ -76,7 +86,7 @@ export default function WidgetCard({ title, icon, children, className = '' }) {
         </div>
       )}
       <div className="widget-body">
-        <div className="widget-content" style={{ zoom: contentScale }}>
+        <div className="widget-content" style={{ zoom: scaleWithCard ? contentScale : 1 }}>
           {children}
         </div>
       </div>

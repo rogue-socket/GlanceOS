@@ -1,17 +1,18 @@
 import WidgetCard from '../WidgetCard';
 
 const EVENT_LABELS = {
-  PushEvent: '📤 Push',
-  PullRequestEvent: '🔀 PR',
-  IssuesEvent: '🐛 Issue',
-  CreateEvent: '✨ Create',
-  DeleteEvent: '🗑️ Delete',
-  WatchEvent: '⭐ Star',
-  ForkEvent: '🍴 Fork',
-  IssueCommentEvent: '💬 Comment',
+  PushEvent: 'PUSH',
+  PullRequestEvent: 'PR',
+  IssuesEvent: 'ISSUE',
+  CreateEvent: 'CREATE',
+  DeleteEvent: 'DELETE',
+  WatchEvent: 'STAR',
+  ForkEvent: 'FORK',
+  IssueCommentEvent: 'COMMENT',
 };
 
 function timeAgo(dateStr) {
+  if (!dateStr) return 'now';
   const diff = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60000);
   if (mins < 60) return `${mins}m ago`;
@@ -20,10 +21,18 @@ function timeAgo(dateStr) {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
+function contributionColor(level) {
+  if (level >= 4) return '#22c55e';
+  if (level === 3) return '#16a34a';
+  if (level === 2) return '#15803d';
+  if (level === 1) return '#14532d';
+  return 'rgba(100,116,139,0.24)';
+}
+
 export default function GitHubWidget({ data }) {
   if (!data) {
     return (
-      <WidgetCard title="GitHub" icon="🐙">
+      <WidgetCard title="GitHub" icon="github">
         <div className="flex items-center justify-center h-full text-glance-muted text-sm">
           Waiting for data…
         </div>
@@ -31,11 +40,45 @@ export default function GitHubWidget({ data }) {
     );
   }
 
+  const weeks = data.contributions?.weeks || [];
+
   return (
-    <WidgetCard title={`GitHub · ${data.username}`} icon="🐙">
+    <WidgetCard title={`GitHub · ${data.username}`} icon="github">
       <div className="flex flex-col gap-2 pt-1">
+        <div className="flex items-center justify-between">
+          <div className="text-[10px] uppercase tracking-[0.12em] text-glance-muted/80">Contribution Graph</div>
+          <div className="text-[10px] text-glance-muted/60">{data.source}</div>
+        </div>
+
+        {weeks.length > 0 ? (
+          <div className="overflow-x-auto pb-1">
+            <div
+              className="grid gap-[2px]"
+              style={{
+                gridAutoFlow: 'column',
+                gridTemplateRows: 'repeat(7, 8px)',
+                gridAutoColumns: '8px',
+                width: 'max-content',
+              }}
+            >
+              {weeks.flatMap((week, weekIndex) =>
+                week.map((level, dayIndex) => (
+                  <span
+                    key={`${weekIndex}-${dayIndex}`}
+                    className="rounded-[2px]"
+                    style={{ backgroundColor: contributionColor(level) }}
+                    title={`Level ${level}`}
+                  />
+                )),
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="text-[11px] text-glance-muted">Contribution graph unavailable right now</div>
+        )}
+
         {data.events?.length === 0 && (
-          <div className="text-sm text-glance-muted text-center">No recent activity</div>
+          <div className="text-sm text-glance-muted text-center">No recent public activity</div>
         )}
         {data.events?.map((event) => (
           <div

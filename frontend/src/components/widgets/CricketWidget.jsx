@@ -22,7 +22,7 @@ function statusColor(status) {
 export default function CricketWidget({ data }) {
   if (!data) {
     return (
-      <WidgetCard title="Cricket" icon="🏏">
+      <WidgetCard title="Cricket" icon="cricket">
         <div className="flex items-center justify-center h-full text-glance-muted text-sm">
           Waiting for data…
         </div>
@@ -33,7 +33,7 @@ export default function CricketWidget({ data }) {
   const matches = data.matches || [];
 
   return (
-    <WidgetCard title="Cricket" icon="🏏">
+    <WidgetCard title="Cricket" icon="cricket">
       <div className="flex flex-col gap-2.5 pt-1">
         {matches.length === 0 && (
           <div className="text-sm text-glance-muted text-center py-2">

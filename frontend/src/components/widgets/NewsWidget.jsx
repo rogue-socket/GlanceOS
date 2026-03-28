@@ -14,7 +14,7 @@ function timeAgo(dateStr) {
 export default function NewsWidget({ data }) {
   if (!data) {
     return (
-      <WidgetCard title="News" icon="📰">
+      <WidgetCard title="News" icon="news">
         <div className="flex items-center justify-center h-full text-glance-muted text-sm">
           Waiting for data…
         </div>
@@ -25,7 +25,7 @@ export default function NewsWidget({ data }) {
   const articles = data.articles || [];
 
   return (
-    <WidgetCard title={`News · ${data.category || 'tech'}`} icon="📰">
+    <WidgetCard title={`News · ${data.category || 'tech'}`} icon="news">
       <div className="flex flex-col gap-1.5 pt-1">
         {articles.length === 0 && (
           <div className="text-sm text-glance-muted text-center">No articles</div>

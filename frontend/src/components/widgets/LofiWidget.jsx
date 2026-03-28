@@ -1,151 +1,156 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import WidgetCard from '../WidgetCard';
 
-// Client-side fallback scenes for instant display
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
 const SPINNING_DONUT_FRAMES = [
-  `
-      *
-    .-"""-.
-  .'  .-.  '.
- /  .'   '.  \
-|  |  (_)  |  |
- \  '.   .'  /
-  '.  '-'  .'
-    '-...-'
+  String.raw`
+      .-"""-.
+    .'  .-.  '.
+   /  .'   '.  \
+  |  |  (_)  |  |
+   \  '.   .'  /
+    '.  '-'  .'
+      '-...-'
+        *
 `,
-  `
-              *
-    .-"""-.
-  .'  .-.  '.
- /  .'   '.  \
-|  |  (_)  |  |
- \  '.   .'  /
-  '.  '-'  .'
-    '-...-'
+  String.raw`
+      .-"""-.
+    .'  .-.  '.
+   /  .'   '.  \   *
+  |  |  (_)  |  |
+   \  '.   .'  /
+    '.  '-'  .'
+      '-...-'
 `,
-  `
-    .-"""-.
-  .'  .-.  '.
- /  .'   '.  \
-|  |  (_)  |  |
- \  '.   .'  /
-  '.  '-'  .'
-    '-...-'
-      *
+  String.raw`
+      .-"""-.
+    .'  .-.  '.
+   /  .'   '.  \
+  |  |  (_)  |  |
+   \  '.   .'  /
+    '.  '-'  .'  *
+      '-...-'
 `,
-  `
-    .-"""-.
-  .'  .-.  '.
- /  .'   '.  \
-|  |  (_)  |  |   *
- \  '.   .'  /
-  '.  '-'  .'
-    '-...-'
+  String.raw`
+      .-"""-.
+    .'  .-.  '.
+ * /  .'   '.  \
+  |  |  (_)  |  |
+   \  '.   .'  /
+    '.  '-'  .'
+      '-...-'
 `,
-  `
-    .-"""-.
-  .'  .-.  '.
- /  .'   '.  \
-|  |  (_)  |  |
- \  '.   .'  /
-  '.  '-'  .'   *
-    '-...-'
+  String.raw`
+      .-"""-.
+  * .'  .-.  '.
+   /  .'   '.  \
+  |  |  (_)  |  |
+   \  '.   .'  /
+    '.  '-'  .'
+      '-...-'
 `,
-  `
-    .-"""-.
-  .'  .-.  '.
- /  .'   '.  \
-|  |  (_)  |  |
- \  '.   .'  /
-  '.  '-'  .'
-*   '-...-'
+  String.raw`
+      .-"""-.
+    .'  .-.  '.
+   /  .'   '.  \
+  |  |  (_)  |  |  *
+   \  '.   .'  /
+    '.  '-'  .'
+      '-...-'
 `,
-  `
-    .-"""-.
-* .'  .-.  '.
- /  .'   '.  \
-|  |  (_)  |  |
- \  '.   .'  /
-  '.  '-'  .'
-    '-...-'
+  String.raw`
+      .-"""-.
+    .'  .-.  '.
+   /  .'   '.  \
+  |  |  (_)  |  |
+   \  '.   .'  /
+    '.  '-'  .'
+  *   '-...-'
 `,
-  `
-    .-"""-.
-  .'  .-.  '.
-* /  .'   '.  \
-|  |  (_)  |  |
- \  '.   .'  /
-  '.  '-'  .'
-    '-...-'
+  String.raw`
+      .-"""-.
+    .'  .-.  '.
+   /  .'   '.  \
+  |  |  (_)  |  |
+   \  '.   .'  /
+    '.  '-'  .'
+      '-...-'
 `,
 ];
 
 const LOCAL_SCENES = [
   {
-    art: `
-     _._     _,-'""\`-._
-    (,-.\`._,'(       |\\'-/|
-        \`-.-' \\ )-\`( , o o)
-              \`-    \\\`_\`"'-`,
+    art: String.raw`
+      _._     _,-'""`-._
+     (,-.`._,'(       |\'-/|
+         `-.-' \ )-`( , o o)
+               `-    \`_`"'-
+`,
     label: 'chill cat',
   },
   {
-    art: `
-        |\\      _,,,---,,_
-  ZZZzz /,\`.-'\`'    -.  ;-;;,_
-       |,4-  ) )-,_. ,\\ (  \`'-'
-      '---''(_/--'  \`-'\\_)`,
+    art: String.raw`
+         |\      _,,,---,,_
+   ZZZzz /,`.-'`'    -.  ;-;;,_
+        |,4-  ) )-,_. ,\ (  `'-'
+       '---''(_/--'  `-'\_)
+`,
     label: 'sleepy cat',
   },
   {
-    art: `
-  ╔═══════════════╗
-  ║  ~~  LOFI  ~~ ║
-  ║               ║
-  ║  ♪ ♫  ♪ ♫  ♪ ║
-  ║    beats to   ║
-  ║   code to     ║
-  ║               ║
-  ╚═══════════════╝`,
+    art: String.raw`
+  +---------------+
+  |   ~~ LOFI ~~  |
+  |               |
+  |  beats to     |
+  |  code to      |
+  |               |
+  +---------------+
+`,
     label: 'beats to code to',
   },
   {
-    art: `
+    art: String.raw`
      .  *  . .  * .  .
    .  .  *  .  . . *
-  ─────────────────────
-  ╭─────────╮
-  │  ✧ 3:AM │  ░░▒▒▓▓█
-  │  coffee  │  ♪ ~ ♫ ~
-  │  & code  │  v0.1.0
-  ╰─────────╯`,
+  ---------------------
+  /  3:AM      ######  \
+ |  coffee      ~~~     |
+ |  and code    v0.1.0  |
+  \_____________________/
+`,
     label: '3am vibes',
   },
   {
-    art: `
-   _____
-  |     |
-  | | | |
-  |_____|
-  _|___|_
- |  ___  |
- | |   | |   ♪ ♫ ♪
- | |___| |
- |_______|`,
+    art: String.raw`
+    _____
+   |     |
+   | | | |
+   |_____|
+   _|___|_
+  |  ___  |
+  | |   | |  ~~~
+  | |___| |
+  |_______|
+`,
     label: 'radio vibes',
   },
   {
-    art: `
-  .  *  .  . *  .  *
-    .  *  . .  .   .
-  ___________________
- /                   \\
-|   (  ) _   _  (  )  |
-|    ||  |\\ /|   ||    |
-|    ||  | v |   ||    |
- \\___________________/
-  ---- === === ----`,
+    art: String.raw`
+   .  *  .  . *  .  *
+     .  *  . .  .   .
+   ___________________
+  /                   \
+ |   (  ) _   _  (  )  |
+ |    ||  |\ /|   ||    |
+ |    ||  | v |   ||    |
+  \___________________/
+   ---- === === ----
+`,
     label: 'window view',
   },
   {
@@ -159,6 +164,8 @@ export default function LofiWidget({ data }) {
   const [sceneIdx, setSceneIdx] = useState(0);
   const [ticker, setTicker] = useState(0);
   const [frameIdx, setFrameIdx] = useState(0);
+  const preWrapRef = useRef(null);
+  const [asciiFontPx, setAsciiFontPx] = useState(10);
 
   // Cycle through scenes every 12 seconds
   useEffect(() => {
@@ -201,39 +208,80 @@ export default function LofiWidget({ data }) {
     return () => clearInterval(id);
   }, [sceneFrames, frameMs]);
 
+  const activeFrame = sceneFrames[frameIdx] || '';
+
+  useEffect(() => {
+    const preWrap = preWrapRef.current;
+    if (!preWrap) return;
+
+    const fit = () => {
+      const rect = preWrap.getBoundingClientRect();
+      const lines = activeFrame
+        .split('\n')
+        .map(line => line.replace(/\s+$/g, ''))
+        .filter(line => line.length > 0);
+
+      const maxChars = Math.max(...lines.map(line => line.length), 1);
+      const lineCount = Math.max(lines.length, 1);
+      const usableWidth = Math.max(rect.width - 16, 80);
+      const usableHeight = Math.max(rect.height - 14, 60);
+
+      const byWidth = usableWidth / (maxChars * 0.62);
+      const byHeight = usableHeight / (lineCount * 1.3);
+      const nextFont = clamp(Math.floor(Math.min(byWidth, byHeight)), 7, 28);
+      setAsciiFontPx(nextFont);
+    };
+
+    fit();
+
+    if (typeof ResizeObserver !== 'undefined') {
+      const observer = new ResizeObserver(fit);
+      observer.observe(preWrap);
+      return () => observer.disconnect();
+    }
+
+    window.addEventListener('resize', fit);
+    return () => window.removeEventListener('resize', fit);
+  }, [activeFrame]);
+
   return (
-    <WidgetCard className="lofi-widget">
-      <div className="flex flex-col items-center justify-center h-full relative">
+    <WidgetCard className="lofi-widget" scaleWithCard={false}>
+      <div className="flex flex-col items-center justify-center h-full relative w-full">
         {/* Scanline overlay */}
         <div className="absolute inset-0 pointer-events-none opacity-[0.03] bg-[repeating-linear-gradient(0deg,transparent,transparent_2px,rgba(0,0,0,0.3)_2px,rgba(0,0,0,0.3)_4px)]" />
 
         {/* ASCII art with fade transition */}
+        <div ref={preWrapRef} className="flex-1 w-full flex items-center justify-center overflow-hidden px-1">
         <AnimatePresence mode="wait">
           <motion.pre
-            key={scene.label + ticker}
+            key={scene.label + ticker + frameIdx}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.8 }}
-            className="text-glance-accent font-mono text-[9px] leading-[1.3] whitespace-pre select-none"
-            style={{ textShadow: '0 0 8px rgba(56, 189, 248, 0.3)' }}
+            transition={{ duration: 0.25 }}
+            className="text-glance-accent font-mono leading-[1.2] whitespace-pre select-none text-center"
+            style={{
+              textShadow: '0 0 8px rgba(56, 189, 248, 0.3)',
+              fontSize: `${asciiFontPx}px`,
+            }}
           >
-            {sceneFrames[frameIdx] || ''}
+            {activeFrame}
           </motion.pre>
         </AnimatePresence>
+        </div>
 
         {/* Label */}
         <motion.div
           key={scene.label + '-label'}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="mt-2 text-[10px] text-glance-muted/70 font-mono tracking-widest uppercase"
+          className="mt-1 text-[10px] text-glance-muted/70 font-mono tracking-widest uppercase"
         >
-          ─ {scene.label} ─
+          - {scene.label} -
         </motion.div>
 
         {/* Subtle animated dots */}
-        <div className="flex gap-1 mt-2">
+        <div className="flex gap-1 mt-1.5 mb-0.5">
           {[0, 1, 2].map(i => (
             <motion.span
               key={i}

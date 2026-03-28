@@ -1,30 +1,114 @@
 import httpx
 import logging
+from datetime import datetime, timedelta, timezone
+
+from app.config import get_settings
 
 logger = logging.getLogger("glanceos.trending")
 
 
 async def fetch_github_trending(language: str = "", since: str = "daily") -> dict:
-    """Fetch trending repos from GitHub. Uses the unofficial trending page scraper API."""
+    """Fetch trending repositories using live GitHub-backed sources only."""
+
+    settings = get_settings()
+    headers = {
+        "Accept": "application/vnd.github+json",
+        "User-Agent": "GlanceOS/0.1",
+    }
+    if settings.github_token:
+        headers["Authorization"] = f"Bearer {settings.github_token}"
+
+    try:
+        return await _fetch_from_github_search(language, since, headers)
+    except Exception as exc:
+        logger.warning("Trending fetch failed: %s", exc)
 
     try:
         return await _fetch_trending_api(language, since)
-    except Exception:
-        logger.debug("Trending API failed, using sample data")
+    except Exception as exc:
+        logger.warning("Fallback trending fetch failed: %s", exc)
 
     return {
         "type": "trending",
         "data": {
-            "repos": _get_sample_trending(),
+            "repos": [],
             "language": language or "all",
             "since": since,
-            "source": "sample",
+            "source": "unavailable",
+            "error": "Live trending sources unavailable",
+        },
+    }
+
+
+def _since_days(since: str) -> int:
+    normalized = (since or "daily").lower()
+    if normalized == "weekly":
+        return 7
+    if normalized == "monthly":
+        return 30
+    return 1
+
+
+async def _fetch_from_github_search(language: str, since: str, headers: dict[str, str]) -> dict:
+    days = _since_days(since)
+    start_date = (datetime.now(timezone.utc) - timedelta(days=days)).date().isoformat()
+
+    query_parts = [f"created:>{start_date}"]
+    if language:
+        query_parts.append(f"language:{language}")
+
+    query = " ".join(query_parts)
+    params = {
+        "q": query,
+        "sort": "stars",
+        "order": "desc",
+        "per_page": 10,
+    }
+
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        resp = await client.get(
+            "https://api.github.com/search/repositories",
+            params=params,
+            headers=headers,
+        )
+        resp.raise_for_status()
+        raw = resp.json()
+
+    items = raw.get("items", [])
+    if not items:
+        raise ValueError("GitHub search returned no repositories")
+
+    repos = []
+    for item in items[:10]:
+        repos.append(
+            {
+                "name": item.get("full_name", ""),
+                "description": (item.get("description") or "")[:120],
+                "language": item.get("language") or "",
+                "stars": item.get("stargazers_count", 0),
+                "forks": item.get("forks_count", 0),
+                "today_stars": None,
+                "url": item.get("html_url", ""),
+            }
+        )
+
+    repos = [repo for repo in repos if repo["name"]]
+    if not repos:
+        raise ValueError("GitHub search returned empty repository names")
+
+    return {
+        "type": "trending",
+        "data": {
+            "repos": repos,
+            "language": language or "all",
+            "since": since,
+            "source": "github-search",
         },
     }
 
 
 async def _fetch_trending_api(language: str, since: str) -> dict:
-    """Use the GitHub trending informal JSON endpoint."""
+    """Fallback to an informal trending mirror when GitHub search is unavailable."""
     # This uses a community mirror of the trending page
     url = "https://api.gitterapp.com/repositories"
     params = {"language": language, "since": since}
@@ -62,53 +146,3 @@ async def _fetch_trending_api(language: str, since: str) -> dict:
             "source": "gitterapp",
         },
     }
-
-
-def _get_sample_trending() -> list:
-    return [
-        {
-            "name": "pocketbase/pocketbase",
-            "description": "Open Source realtime backend in 1 file",
-            "language": "Go",
-            "stars": 42800,
-            "forks": 2100,
-            "today_stars": 385,
-            "url": "https://github.com/pocketbase/pocketbase",
-        },
-        {
-            "name": "anthropics/claude-code",
-            "description": "An agentic coding tool from Anthropic",
-            "language": "TypeScript",
-            "stars": 28500,
-            "forks": 1800,
-            "today_stars": 620,
-            "url": "https://github.com/anthropics/claude-code",
-        },
-        {
-            "name": "fastapi/fastapi",
-            "description": "High performance Python web framework",
-            "language": "Python",
-            "stars": 81200,
-            "forks": 6900,
-            "today_stars": 142,
-            "url": "https://github.com/fastapi/fastapi",
-        },
-        {
-            "name": "oven-sh/bun",
-            "description": "Incredibly fast JavaScript runtime, bundler, transpiler",
-            "language": "Zig",
-            "stars": 76300,
-            "forks": 2800,
-            "today_stars": 98,
-            "url": "https://github.com/oven-sh/bun",
-        },
-        {
-            "name": "denoland/deno",
-            "description": "A modern runtime for JavaScript and TypeScript",
-            "language": "Rust",
-            "stars": 98700,
-            "forks": 5400,
-            "today_stars": 76,
-            "url": "https://github.com/denoland/deno",
-        },
-    ]

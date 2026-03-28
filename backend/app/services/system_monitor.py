@@ -2,6 +2,7 @@ import psutil
 import platform
 import sys
 import subprocess
+from pathlib import Path
 from datetime import datetime
 
 
@@ -45,43 +46,71 @@ def _read_temp_from_psutil() -> tuple[float | None, str | None]:
 
 
 def _read_temp_from_sysfs() -> tuple[float | None, str | None]:
-    zone_paths = [
-        "/sys/class/thermal/thermal_zone0/temp",
-        "/sys/class/hwmon/hwmon0/temp1_input",
-    ]
+    candidates: list[tuple[float, str, bool]] = []
 
-    for path in zone_paths:
+    for zone_temp in Path("/sys/class/thermal").glob("thermal_zone*/temp"):
         try:
-            with open(path, "r", encoding="utf-8") as f:
-                raw = f.read().strip()
+            raw = zone_temp.read_text(encoding="utf-8").strip()
+            value = float(raw)
+            celsius = value / 1000.0 if value > 1000 else value
+            if not (-20 <= celsius <= 150):
+                continue
+
+            zone_type_file = zone_temp.parent / "type"
+            zone_type = ""
+            if zone_type_file.exists():
+                zone_type = zone_type_file.read_text(encoding="utf-8").strip().lower()
+
+            preferred = any(
+                token in zone_type for token in ("cpu", "soc", "package", "thermal")
+            )
+            source = f"sysfs:{zone_type or zone_temp.parent.name}"
+            candidates.append((celsius, source, preferred))
+        except Exception:
+            continue
+
+    for hwmon_temp in Path("/sys/class/hwmon").glob("hwmon*/temp*_input"):
+        try:
+            raw = hwmon_temp.read_text(encoding="utf-8").strip()
             value = float(raw)
             celsius = value / 1000.0 if value > 1000 else value
             if -20 <= celsius <= 150:
-                return celsius, "sysfs"
+                candidates.append((celsius, f"sysfs:{hwmon_temp.parent.name}", False))
         except Exception:
             continue
+
+    if candidates:
+        preferred = [entry for entry in candidates if entry[2]]
+        if preferred:
+            best = max(preferred, key=lambda entry: entry[0])
+            return best[0], best[1]
+        best = max(candidates, key=lambda entry: entry[0])
+        return best[0], best[1]
 
     return None, None
 
 
 def _read_temp_from_vcgencmd() -> tuple[float | None, str | None]:
-    try:
-        result = subprocess.run(
-            ["vcgencmd", "measure_temp"],
-            check=False,
-            capture_output=True,
-            text=True,
-            timeout=1,
-        )
-        out = result.stdout.strip()
-        # format: temp=48.6'C
-        if out.startswith("temp="):
-            value_str = out.split("=", 1)[1].split("'", 1)[0]
-            celsius = float(value_str)
-            if -20 <= celsius <= 150:
-                return celsius, "vcgencmd"
-    except Exception:
-        return None, None
+    commands = ["vcgencmd", "/usr/bin/vcgencmd", "/opt/vc/bin/vcgencmd"]
+
+    for cmd in commands:
+        try:
+            result = subprocess.run(
+                [cmd, "measure_temp"],
+                check=False,
+                capture_output=True,
+                text=True,
+                timeout=1,
+            )
+            out = result.stdout.strip()
+            # format: temp=48.6'C
+            if out.startswith("temp="):
+                value_str = out.split("=", 1)[1].split("'", 1)[0]
+                celsius = float(value_str)
+                if -20 <= celsius <= 150:
+                    return celsius, "vcgencmd"
+        except Exception:
+            continue
 
     return None, None
 

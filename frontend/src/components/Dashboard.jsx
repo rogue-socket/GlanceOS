@@ -108,7 +108,7 @@ export default function Dashboard() {
         <div className="flex items-center justify-between px-5 py-3">
           <div className="flex items-center gap-3">
             <h1 className="text-base font-semibold text-glance-text tracking-tight flex items-center gap-2">
-              <span className="text-glance-accent">⬡</span>
+              <span className="widget-icon-badge">GOS</span>
               GlanceOS
             </h1>
             <div className="flex items-center gap-1.5 ml-2 px-2 py-0.5 rounded-full bg-glance-accent-dim">
