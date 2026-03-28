@@ -22,6 +22,7 @@ async def fetch_github_events(username: str = "octocat") -> dict:
 
     events: list[dict] = []
     contributions = _empty_contributions()
+    contributions_ok = False
     source = "unavailable"
 
     async with httpx.AsyncClient(timeout=10.0, follow_redirects=True) as client:
@@ -32,10 +33,11 @@ async def fetch_github_events(username: str = "octocat") -> dict:
 
         try:
             contributions = await _fetch_contributions(client, username, headers)
+            contributions_ok = True
         except Exception as exc:
             logger.warning("GitHub contributions fetch failed for %s: %s", username, exc)
 
-    if events or contributions["weeks"]:
+    if events or contributions_ok:
         source = "live"
 
     return {
@@ -72,7 +74,7 @@ async def _fetch_contributions(
     client: httpx.AsyncClient, username: str, headers: dict[str, str]
 ) -> dict:
     today = date.today()
-    start = today - timedelta(days=7 * CONTRIBUTION_WEEKS)
+    window_start = today - timedelta(days=(7 * CONTRIBUTION_WEEKS) - 1)
     url = f"https://github.com/users/{username}/contributions"
 
     contribution_headers = {
@@ -82,7 +84,7 @@ async def _fetch_contributions(
 
     resp = await client.get(
         url,
-        params={"from": start.isoformat(), "to": today.isoformat()},
+        params={"from": window_start.isoformat(), "to": today.isoformat()},
         headers=contribution_headers,
     )
     resp.raise_for_status()
@@ -120,7 +122,7 @@ async def _fetch_contributions(
         cells.append((day_date, max(0, min(level, 4))))
 
     if not cells:
-        return _empty_contributions()
+        return _empty_contributions(today)
 
     day_levels: dict[date, int] = {}
     for date_str, level in cells:
@@ -131,21 +133,11 @@ async def _fetch_contributions(
             continue
 
     if not day_levels:
-        return _empty_contributions()
-
-    first_day = min(day_levels.keys())
-    last_day = max(day_levels.keys())
-
-    # GitHub contribution weeks are Sunday-aligned columns.
-    start_offset = (first_day.weekday() + 1) % 7
-    start_aligned = first_day - timedelta(days=start_offset)
-
-    end_offset = (6 - ((last_day.weekday() + 1) % 7)) % 7
-    end_aligned = last_day + timedelta(days=end_offset)
+        return _empty_contributions(today)
 
     levels: list[int] = []
-    cursor = start_aligned
-    while cursor <= end_aligned:
+    cursor = window_start
+    while cursor <= today:
         levels.append(day_levels.get(cursor, 0))
         cursor += timedelta(days=1)
 
@@ -153,18 +145,27 @@ async def _fetch_contributions(
     for idx in range(0, len(levels), 7):
         weeks.append(levels[idx : idx + 7])
 
+    if len(weeks) < CONTRIBUTION_WEEKS:
+        padding = [[0, 0, 0, 0, 0, 0, 0] for _ in range(CONTRIBUTION_WEEKS - len(weeks))]
+        weeks = padding + weeks
+    else:
+        weeks = weeks[-CONTRIBUTION_WEEKS:]
+
     return {
-        "weeks": weeks[-CONTRIBUTION_WEEKS:],
+        "weeks": weeks,
         "max_level": 4,
-        "from": start.isoformat(),
+        "from": window_start.isoformat(),
         "to": today.isoformat(),
     }
 
 
-def _empty_contributions() -> dict:
+def _empty_contributions(today: date | None = None) -> dict:
+    today = today or date.today()
+    window_start = today - timedelta(days=(7 * CONTRIBUTION_WEEKS) - 1)
+
     return {
-        "weeks": [],
+        "weeks": [[0, 0, 0, 0, 0, 0, 0] for _ in range(CONTRIBUTION_WEEKS)],
         "max_level": 4,
-        "from": None,
-        "to": None,
+        "from": window_start.isoformat(),
+        "to": today.isoformat(),
     }

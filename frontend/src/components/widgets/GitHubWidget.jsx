@@ -1,6 +1,7 @@
 import WidgetCard from '../WidgetCard';
 
 const WEEKS_TO_SHOW = 10;
+const CELL_SIZE_PX = 8;
 
 const EVENT_LABELS = {
   PushEvent: 'PUSH',
@@ -23,11 +24,18 @@ function timeAgo(dateStr) {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
+function normalizeContributionLevel(level) {
+  const parsed = Number(level);
+  if (!Number.isFinite(parsed)) return 0;
+  return Math.max(0, Math.min(4, Math.round(parsed)));
+}
+
 function contributionColor(level) {
-  if (level >= 4) return '#22c55e';
-  if (level === 3) return '#16a34a';
-  if (level === 2) return '#15803d';
-  if (level === 1) return '#14532d';
+  const normalized = normalizeContributionLevel(level);
+  if (normalized >= 4) return '#39d353';
+  if (normalized === 3) return '#26a641';
+  if (normalized === 2) return '#006d32';
+  if (normalized === 1) return '#0e4429';
   return 'rgba(100,116,139,0.24)';
 }
 
@@ -61,24 +69,25 @@ export default function GitHubWidget({ data }) {
         </div>
 
         {weeks.length > 0 ? (
-          <div className="w-full pb-1">
+          <div className="w-full overflow-x-auto pb-1">
             <div
-              className="w-full grid gap-[2px]"
-              style={{ gridTemplateColumns: `repeat(${normalizedWeeks.length}, minmax(0, 1fr))` }}
+              className="inline-grid gap-[2px]"
+              style={{ gridTemplateColumns: `repeat(${normalizedWeeks.length}, ${CELL_SIZE_PX}px)` }}
             >
               {normalizedWeeks.map((week, weekIndex) => (
                 <div
                   key={`week-${weekIndex}`}
                   className="grid gap-[2px]"
-                  style={{ gridTemplateRows: 'repeat(7, minmax(0, 1fr))' }}
+                  style={{ gridTemplateRows: `repeat(7, ${CELL_SIZE_PX}px)` }}
                 >
                   {week.map((level, dayIndex) => (
                     <span
                       key={`${weekIndex}-${dayIndex}`}
-                      className="rounded-[2px] block w-full"
+                      className="rounded-[2px] block"
                       style={{
                         backgroundColor: contributionColor(level),
-                        aspectRatio: '1 / 1',
+                        width: `${CELL_SIZE_PX}px`,
+                        height: `${CELL_SIZE_PX}px`,
                       }}
                       title={`Level ${level}`}
                     />

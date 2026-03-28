@@ -11,7 +11,6 @@ class Settings(BaseSettings):
     weather_api_key: str = ""
     github_token: str = ""
     todoist_api_token: str = ""
-    todoist_project_id: str = ""
     google_calendar_id: str = ""
     google_calendar_api_key: str = ""
     google_calendar_ics_url: str = ""

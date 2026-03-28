@@ -71,5 +71,5 @@ async def calendar():
 
 
 @router.get("/todo")
-async def todo(project_id: str = ""):
-    return await fetch_todoist_tasks(project_id or None)
+async def todo():
+    return await fetch_todoist_tasks()

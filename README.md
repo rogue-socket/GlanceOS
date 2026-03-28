@@ -101,7 +101,6 @@ You can still edit `backend/.env` manually:
 | `WEATHER_API_KEY` | OpenWeatherMap API key               | No*      |
 | `GITHUB_TOKEN`    | GitHub personal access token         | No*      |
 | `TODOIST_API_TOKEN` | Todoist API token                  | No |
-| `TODOIST_PROJECT_ID` | Todoist project ID filter         | No |
 | `GOOGLE_CALENDAR_ICS_URL` | Google Calendar ICS URL (private/public calendars) | No |
 | `GOOGLE_CALENDAR_ID` | Google Calendar ID for API mode | No |
 | `GOOGLE_CALENDAR_API_KEY` | Google Calendar API key for API mode | No |
@@ -140,7 +139,7 @@ Get your keys:
 | Trending   | GitHub Trending       | 30 min          |
 | GitHub     | GitHub Events API     | 5 min           |
 | Calendar   | Google Calendar (ICS/API) | 5 min       |
-| Todo       | Todoist API           | 2 min           |
+| Todo       | Todoist Inbox + sections (nested tasks) | 2 min |
 
 All widgets are draggable and resizable. Layouts persist in localStorage.
 

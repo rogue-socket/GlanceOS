@@ -91,6 +91,7 @@ export default function Dashboard() {
   const { widgetData, connected } = useWebSocket();
   const { theme, themePreference, toggleTheme } = useTheme();
   const [layouts, setLayouts] = useState(loadLayouts);
+  const [editMode, setEditMode] = useState(false);
   const gridContainerRef = useRef(null);
   const [gridWidth, setGridWidth] = useState(1200);
 
@@ -125,6 +126,29 @@ export default function Dashboard() {
     saveLayouts(DEFAULT_LAYOUTS);
   }, []);
 
+  useEffect(() => {
+    const handleShortcut = (event) => {
+      const target = event.target;
+      const tagName = target?.tagName?.toLowerCase();
+      if (tagName === 'input' || tagName === 'textarea' || target?.isContentEditable) return;
+
+      const key = event.key.toLowerCase();
+      if (key === 'e') {
+        event.preventDefault();
+        setEditMode((prev) => !prev);
+      } else if (key === 'r') {
+        event.preventDefault();
+        resetLayout();
+      } else if (key === 't') {
+        event.preventDefault();
+        toggleTheme();
+      }
+    };
+
+    window.addEventListener('keydown', handleShortcut);
+    return () => window.removeEventListener('keydown', handleShortcut);
+  }, [resetLayout, toggleTheme]);
+
   return (
     <div className="w-full h-screen bg-glance-bg overflow-auto">
       {/* ── Top bar ─────────────────────────────────── */}
@@ -149,16 +173,27 @@ export default function Dashboard() {
 
           <div className="flex items-center gap-2">
             <button
+              onClick={() => setEditMode((prev) => !prev)}
+              className={`text-xs px-2.5 py-1.5 rounded-md border transition-all cursor-pointer ${
+                editMode
+                  ? 'border-glance-accent/50 text-glance-accent bg-glance-accent/10'
+                  : 'border-glance-border/60 text-glance-muted hover:text-glance-text hover:bg-glance-accent-dim'
+              }`}
+              title="Toggle layout editing (shortcut: E)"
+            >
+              {editMode ? 'Done' : 'Edit Layout'}
+            </button>
+            <button
               onClick={resetLayout}
-              className="text-[11px] text-glance-muted/60 hover:text-glance-muted px-2 py-1 rounded-md hover:bg-glance-accent-dim transition-all cursor-pointer"
-              title="Reset tile layout"
+              className="text-xs text-glance-muted/70 hover:text-glance-muted px-2.5 py-1.5 rounded-md hover:bg-glance-accent-dim transition-all cursor-pointer"
+              title="Reset tile layout (shortcut: R)"
             >
               ↻ Reset
             </button>
             <button
               onClick={toggleTheme}
-              className="text-[11px] text-glance-muted hover:text-glance-text px-2.5 py-1 rounded-md hover:bg-glance-accent-dim transition-all cursor-pointer"
-              title="Cycle theme mode (Auto -> Light -> Dark)"
+              className="text-xs text-glance-muted hover:text-glance-text px-2.5 py-1.5 rounded-md hover:bg-glance-accent-dim transition-all cursor-pointer"
+              title="Cycle theme mode (shortcut: T)"
             >
               {themePreference === 'auto'
                 ? `Auto · ${theme === 'dark' ? 'Dark' : 'Light'}`
@@ -178,8 +213,8 @@ export default function Dashboard() {
           breakpoints={{ lg: 1200, md: 900, sm: 480 }}
           cols={{ lg: 12, md: 10, sm: 6 }}
           rowHeight={56}
-          isDraggable={true}
-          isResizable={true}
+          isDraggable={editMode}
+          isResizable={editMode}
           compactType="vertical"
           margin={[12, 12]}
           containerPadding={[0, 0]}

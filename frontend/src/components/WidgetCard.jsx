@@ -219,7 +219,16 @@ export default function WidgetCard({
       <div className={`widget-body ${bodyClassName}`}>
         <div
           className={`widget-content ${contentClassName}`}
-          style={{ zoom: scaleWithCard ? contentScale : 1 }}
+            style={
+              scaleWithCard
+                ? {
+                    transform: `scale(${contentScale})`,
+                    transformOrigin: 'top left',
+                    width: `${100 / contentScale}%`,
+                    height: `${100 / contentScale}%`,
+                  }
+                : undefined
+            }
         >
           {children}
         </div>

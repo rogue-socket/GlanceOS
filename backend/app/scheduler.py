@@ -133,7 +133,7 @@ def start_scheduler() -> None:
 
     scheduler.add_job(_push_clock, "interval", seconds=1, id="clock")
     scheduler.add_job(_push_system_stats, "interval", seconds=3, id="system")
-    scheduler.add_job(_push_weather, "interval", minutes=10, id="weather", next_run_time=now)
+    scheduler.add_job(_push_weather, "interval", minutes=5, id="weather", next_run_time=now)
     scheduler.add_job(_push_github, "interval", minutes=5, id="github", next_run_time=now)
     scheduler.add_job(_push_cricket, "interval", minutes=2, id="cricket", next_run_time=now)
     scheduler.add_job(_push_news, "interval", minutes=15, id="news", next_run_time=now)
