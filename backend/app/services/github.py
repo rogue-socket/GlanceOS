@@ -87,22 +87,23 @@ async def _fetch_contributions(
     resp.raise_for_status()
 
     svg = resp.text
-    rect_pattern = re.compile(r"<rect\b[^>]*>", flags=re.IGNORECASE)
-    date_pattern = re.compile(r"data-date=[\"']([0-9]{4}-[0-9]{2}-[0-9]{2})[\"']")
-    level_pattern = re.compile(r"data-level=[\"']([0-4])[\"']")
+    day_tag_pattern = re.compile(
+        r"<[^>]*\bdata-date=[\"']([0-9]{4}-[0-9]{2}-[0-9]{2})[\"'][^>]*>",
+        flags=re.IGNORECASE,
+    )
+    level_pattern = re.compile(r"data-level=[\"']([0-9]+)[\"']")
     count_pattern = re.compile(r"data-count=[\"']([0-9]+)[\"']")
 
     cells: list[tuple[str, int]] = []
-    for rect_tag in rect_pattern.findall(svg):
-        date_match = date_pattern.search(rect_tag)
-        if not date_match:
-            continue
+    for day_tag_match in day_tag_pattern.finditer(svg):
+        day_tag = day_tag_match.group(0)
+        day_date = day_tag_match.group(1)
 
-        level_match = level_pattern.search(rect_tag)
+        level_match = level_pattern.search(day_tag)
         if level_match:
             level = int(level_match.group(1))
         else:
-            count_match = count_pattern.search(rect_tag)
+            count_match = count_pattern.search(day_tag)
             count = int(count_match.group(1)) if count_match else 0
             if count <= 0:
                 level = 0
@@ -115,7 +116,7 @@ async def _fetch_contributions(
             else:
                 level = 4
 
-        cells.append((date_match.group(1), max(0, min(level, 4))))
+        cells.append((day_date, max(0, min(level, 4))))
 
     if not cells:
         return _empty_contributions()

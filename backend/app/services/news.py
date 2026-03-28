@@ -67,6 +67,7 @@ META_DESCRIPTION_RE = re.compile(
     flags=re.IGNORECASE,
 )
 PARAGRAPH_RE = re.compile(r"<p[^>]*>(.*?)</p>", flags=re.IGNORECASE | re.DOTALL)
+URL_RE = re.compile(r"https?://\S+", flags=re.IGNORECASE)
 
 
 async def fetch_news(category: str = "technology") -> dict:
@@ -172,7 +173,7 @@ def _parse_rss_items(xml_text: str, source_name: str, seen: set[str]) -> list[di
 
         source = (item.findtext("source") or inferred_source or source_name).strip()
         published = (item.findtext("pubDate") or DEFAULT_PUBLISHED).strip()
-        description = _clean_html(item.findtext("description") or "")
+        description = _normalize_description(_clean_html(item.findtext("description") or ""))
 
         articles.append(
             {
@@ -463,7 +464,9 @@ def _fallback_crux(article: dict) -> str:
 
     title = re.sub(r"\s+", " ", title).strip(" -:;,.!?")
 
-    candidate = description if len(description.split()) >= 8 else title
+    candidate = title
+    if len(description.split()) >= 8 and not _is_url_heavy(description):
+        candidate = description
     candidate = re.sub(r"\s+", " ", candidate).strip()
     if not candidate:
         return "No summary available"
@@ -480,8 +483,15 @@ def _fallback_summary(article: dict) -> str:
     description = (article.get("description") or "").strip()
     title = (article.get("title") or "").strip()
 
-    base = content or description or title
-    base = re.sub(r"\s+", " ", base).strip()
+    base = ""
+    for candidate in (content, description, title):
+        candidate = re.sub(r"\s+", " ", candidate).strip()
+        if not candidate:
+            continue
+        if not _is_url_heavy(candidate) or candidate == title:
+            base = candidate
+            break
+
     if not base:
         return "No summary available"
 
@@ -497,6 +507,54 @@ def _fallback_summary_item(article: dict) -> dict:
         "crux": _fallback_crux(article),
         "summary": _fallback_summary(article),
     }
+
+
+def _normalize_description(value: str) -> str:
+    text = re.sub(r"\s+", " ", (value or "")).strip()
+    if not text:
+        return ""
+
+    # HN-style RSS descriptions are often metadata wrappers, not article text.
+    text = re.sub(r"\bArticle URL:\s*\S+", " ", text, flags=re.IGNORECASE)
+    text = re.sub(r"\bComments URL:\s*\S+", " ", text, flags=re.IGNORECASE)
+    text = re.sub(r"\bPoints:\s*\d+", " ", text, flags=re.IGNORECASE)
+    text = re.sub(r"\b#\s*Comments:\s*\d+", " ", text, flags=re.IGNORECASE)
+    text = re.sub(r"\s+", " ", text).strip(" -:;,.|")
+
+    if _is_url_heavy(text):
+        return ""
+
+    return text
+
+
+def _is_url_heavy(value: str) -> bool:
+    text = (value or "").strip()
+    if not text:
+        return False
+
+    urls = URL_RE.findall(text)
+    words = text.split()
+    if len(urls) >= 2:
+        return True
+
+    if not words:
+        return False
+
+    url_word_count = sum(
+        1 for word in words if word.startswith("http://") or word.startswith("https://")
+    )
+    if (url_word_count / len(words)) >= 0.2:
+        return True
+
+    lowered = text.lower()
+    metadata_markers = (
+        "article url:",
+        "comments url:",
+        "points:",
+        "# comments:",
+    )
+    marker_hits = sum(1 for marker in metadata_markers if marker in lowered)
+    return marker_hits >= 2
 
 
 def _split_google_title(raw_title: str) -> tuple[str, str]:
