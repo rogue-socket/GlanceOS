@@ -39,13 +39,15 @@ export NEWS_LLM_API_KEY="your_gemini_key"
 ./setup.sh
 ```
 
-When you run the backend with `python run.py`, GlanceOS also tries to find a News LLM key in this order:
+When you run the backend with `python run.py`, GlanceOS checks missing service credentials and prompts interactively (one-time) for:
 
-1. `NEWS_LLM_API_KEY` in `backend/.env`
-2. `NEWS_LLM_API_KEY`, `GEMINI_API_KEY`, or `GOOGLE_API_KEY` in environment variables
-3. `GEMINI_API_KEY` or `GOOGLE_API_KEY` in `backend/.env`
+1. `WEATHER_API_KEY`
+2. `GITHUB_TOKEN`
+3. `TODOIST_API_TOKEN`
+4. `NEWS_LLM_API_KEY` (also auto-detected from `GEMINI_API_KEY` / `GOOGLE_API_KEY`)
+5. Google Calendar config: `GOOGLE_CALENDAR_ICS_URL` or `GOOGLE_CALENDAR_ID` + `GOOGLE_CALENDAR_API_KEY`
 
-If none is found and the session is interactive, it prompts for a Gemini key and persists it to `backend/.env`.
+Entered values are persisted to `backend/.env`.
 
 Then start both services:
 

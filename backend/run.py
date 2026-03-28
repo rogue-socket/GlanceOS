@@ -1,5 +1,6 @@
 import os
 import sys
+from getpass import getpass
 from pathlib import Path
 
 import uvicorn
@@ -43,6 +44,18 @@ def _upsert_env_value(file_path: Path, key: str, value: str) -> None:
     file_path.write_text("\n".join(next_lines).rstrip() + "\n", encoding="utf-8")
 
 
+def _ensure_env_file_exists() -> None:
+    if ENV_FILE.exists():
+        return
+
+    example_file = ENV_FILE.with_name(".env.example")
+    if example_file.exists():
+        ENV_FILE.write_text(example_file.read_text(encoding="utf-8"), encoding="utf-8")
+        return
+
+    ENV_FILE.write_text("", encoding="utf-8")
+
+
 def _confirm(prompt: str, default_yes: bool = True) -> bool:
     if not sys.stdin.isatty():
         return default_yes
@@ -54,17 +67,25 @@ def _confirm(prompt: str, default_yes: bool = True) -> bool:
     return answer in {"y", "yes"}
 
 
-def _discover_news_key() -> tuple[str, str]:
-    file_value = _read_env_value(ENV_FILE, "NEWS_LLM_API_KEY").strip()
-    if file_value:
-        return file_value, "backend/.env:NEWS_LLM_API_KEY"
+def _prompt_value(prompt: str, secret: bool = True) -> str:
+    if not sys.stdin.isatty():
+        return ""
+    if secret:
+        return getpass(prompt).strip()
+    return input(prompt).strip()
 
-    for env_key in ("NEWS_LLM_API_KEY", "GEMINI_API_KEY", "GOOGLE_API_KEY"):
+
+def _discover_value(primary_key: str, aliases: tuple[str, ...] = ()) -> tuple[str, str]:
+    file_value = _read_env_value(ENV_FILE, primary_key).strip()
+    if file_value:
+        return file_value, f"backend/.env:{primary_key}"
+
+    for env_key in (primary_key, *aliases):
         env_value = os.getenv(env_key, "").strip()
         if env_value:
             return env_value, f"env:{env_key}"
 
-    for alias_key in ("GEMINI_API_KEY", "GOOGLE_API_KEY"):
+    for alias_key in aliases:
         alias_value = _read_env_value(ENV_FILE, alias_key).strip()
         if alias_value:
             return alias_value, f"backend/.env:{alias_key}"
@@ -72,34 +93,99 @@ def _discover_news_key() -> tuple[str, str]:
     return "", ""
 
 
-def _ensure_news_llm_key() -> None:
-    key, source = _discover_news_key()
-
-    if not key and sys.stdin.isatty():
-        entered = input(
-            "[GlanceOS] Gemini API key not found. Enter key for News summaries (press Enter to skip): "
-        ).strip()
-        if entered:
-            key = entered
-            source = "prompt"
-
-    if not key:
-        print("[GlanceOS] Gemini API key not found. News crux summaries will use non-LLM fallback.")
-        return
-
-    current_news_key = _read_env_value(ENV_FILE, "NEWS_LLM_API_KEY").strip()
-    should_persist = current_news_key != key
+def _persist_value(primary_key: str, value: str, source: str) -> None:
+    current_value = _read_env_value(ENV_FILE, primary_key).strip()
+    should_persist = current_value != value
 
     if should_persist and source.startswith("env:"):
         should_persist = _confirm(
-            f"[GlanceOS] Found key in {source}. Persist it to backend/.env as NEWS_LLM_API_KEY?",
+            f"[GlanceOS] Found value in {source}. Persist it to backend/.env as {primary_key}?",
             default_yes=True,
         )
 
     if should_persist:
-        _upsert_env_value(ENV_FILE, "NEWS_LLM_API_KEY", key)
+        _upsert_env_value(ENV_FILE, primary_key, value)
 
-    if _read_env_value(ENV_FILE, "NEWS_LLM_PROVIDER").strip().lower() != "gemini":
+    os.environ[primary_key] = value
+
+
+def _ensure_service_key(primary_key: str, label: str, aliases: tuple[str, ...] = ()) -> str:
+    value, source = _discover_value(primary_key, aliases)
+
+    if not value:
+        entered = _prompt_value(
+            f"[GlanceOS] {label} not found. Enter now (press Enter to skip): ",
+            secret=True,
+        )
+        if entered:
+            value = entered
+            source = "prompt"
+
+    if not value:
+        print(f"[GlanceOS] {label} not configured.")
+        return ""
+
+    _persist_value(primary_key, value, source)
+    print(f"[GlanceOS] {label} ready ({source}).")
+    return value
+
+
+def _ensure_google_calendar_config() -> None:
+    ics_url, ics_source = _discover_value("GOOGLE_CALENDAR_ICS_URL")
+    if ics_url:
+        _persist_value("GOOGLE_CALENDAR_ICS_URL", ics_url, ics_source)
+        print(f"[GlanceOS] Google Calendar ICS ready ({ics_source}).")
+        return
+
+    calendar_id, id_source = _discover_value("GOOGLE_CALENDAR_ID")
+    calendar_api_key, key_source = _discover_value("GOOGLE_CALENDAR_API_KEY", aliases=("GOOGLE_API_KEY",))
+
+    if calendar_id and calendar_api_key:
+        _persist_value("GOOGLE_CALENDAR_ID", calendar_id, id_source)
+        _persist_value("GOOGLE_CALENDAR_API_KEY", calendar_api_key, key_source)
+        print(f"[GlanceOS] Google Calendar API config ready ({id_source}, {key_source}).")
+        return
+
+    if not sys.stdin.isatty():
+        print("[GlanceOS] Google Calendar not configured.")
+        return
+
+    print("[GlanceOS] Google Calendar not configured.")
+    entered_ics = _prompt_value(
+        "[GlanceOS] Enter Google Calendar ICS URL (recommended, Enter to skip): ",
+        secret=False,
+    )
+    if entered_ics:
+        _persist_value("GOOGLE_CALENDAR_ICS_URL", entered_ics, "prompt")
+        print("[GlanceOS] Google Calendar ICS ready (prompt).")
+        return
+
+    if not calendar_id:
+        calendar_id = _prompt_value(
+            "[GlanceOS] Enter Google Calendar ID for API mode (Enter to skip): ",
+            secret=False,
+        )
+        if calendar_id:
+            id_source = "prompt"
+
+    if calendar_id and not calendar_api_key:
+        calendar_api_key = _prompt_value(
+            "[GlanceOS] Enter Google Calendar API key (Enter to skip): ",
+            secret=True,
+        )
+        if calendar_api_key:
+            key_source = "prompt"
+
+    if calendar_id and calendar_api_key:
+        _persist_value("GOOGLE_CALENDAR_ID", calendar_id, id_source or "prompt")
+        _persist_value("GOOGLE_CALENDAR_API_KEY", calendar_api_key, key_source or "prompt")
+        print("[GlanceOS] Google Calendar API config ready.")
+    else:
+        print("[GlanceOS] Google Calendar remains unconfigured.")
+
+
+def _ensure_news_defaults() -> None:
+    if not _read_env_value(ENV_FILE, "NEWS_LLM_PROVIDER").strip():
         _upsert_env_value(ENV_FILE, "NEWS_LLM_PROVIDER", "gemini")
 
     if not _read_env_value(ENV_FILE, "NEWS_LLM_BASE_URL").strip():
@@ -108,12 +194,23 @@ def _ensure_news_llm_key() -> None:
     if not _read_env_value(ENV_FILE, "NEWS_LLM_MODEL").strip():
         _upsert_env_value(ENV_FILE, "NEWS_LLM_MODEL", GEMINI_DEFAULT_MODEL)
 
-    os.environ["NEWS_LLM_API_KEY"] = key
-    print(f"[GlanceOS] News LLM key ready ({source}).")
 
+def _ensure_service_credentials() -> None:
+    _ensure_env_file_exists()
+    _ensure_news_defaults()
+
+    _ensure_service_key("WEATHER_API_KEY", "OpenWeatherMap API key")
+    _ensure_service_key("GITHUB_TOKEN", "GitHub token")
+    _ensure_service_key("TODOIST_API_TOKEN", "Todoist API token")
+    _ensure_service_key(
+        "NEWS_LLM_API_KEY",
+        "Gemini API key for News summaries",
+        aliases=("GEMINI_API_KEY", "GOOGLE_API_KEY"),
+    )
+    _ensure_google_calendar_config()
 
 def main():
-    _ensure_news_llm_key()
+    _ensure_service_credentials()
     get_settings.cache_clear()
     settings = get_settings()
     uvicorn.run(
