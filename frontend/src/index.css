@@ -149,6 +149,25 @@ body {
   align-items: center;
 }
 
+.widget-icon-svg-wrap {
+  width: 1.15rem;
+  height: 1.15rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-glance-accent);
+}
+
+.widget-icon-svg {
+  width: 1rem;
+  height: 1rem;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.85;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 .widget-icon-badge {
   display: inline-flex;
   align-items: center;
@@ -188,6 +207,18 @@ body {
 .widget-content {
   min-height: 100%;
   width: 100%;
+}
+
+.widget-body--flush {
+  padding: 0;
+  overflow: hidden;
+}
+
+.widget-content--center {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* ── Scrollbar ────────────────────────────────────── */

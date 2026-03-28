@@ -63,7 +63,12 @@ export default function ClockWidget() {
   const greeting = time.getHours() < 12 ? 'Good morning' : time.getHours() < 18 ? 'Good afternoon' : 'Good evening';
 
   return (
-    <WidgetCard scaleWithCard={false}>
+    <WidgetCard
+      scaleWithCard={false}
+      bodyClassName="widget-body--flush"
+      contentClassName="widget-content--center"
+      icon="clock"
+    >
       <div ref={rootRef} className="w-full h-full flex flex-col items-center justify-center text-center gap-1">
         <div
           className="uppercase tracking-[0.2em] text-glance-muted/60 font-medium"

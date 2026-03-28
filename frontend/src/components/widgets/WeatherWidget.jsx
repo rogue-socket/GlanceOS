@@ -1,15 +1,24 @@
 import WidgetCard from '../WidgetCard';
 
 const ICON_MAP = {
-  '01d': 'CLEAR', '01n': 'NIGHT',
-  '02d': 'PARTLY', '02n': 'CLOUD',
-  '03d': 'CLOUD', '03n': 'CLOUD',
-  '04d': 'CLOUD', '04n': 'CLOUD',
-  '09d': 'RAIN', '09n': 'RAIN',
-  '10d': 'SHOWERS', '10n': 'RAIN',
-  '11d': 'STORM', '11n': 'STORM',
-  '13d': 'SNOW', '13n': 'SNOW',
-  '50d': 'MIST', '50n': 'MIST',
+  '01d': { symbol: '☀', label: 'CLEAR' },
+  '01n': { symbol: '☾', label: 'NIGHT' },
+  '02d': { symbol: '⛅', label: 'PARTLY' },
+  '02n': { symbol: '☁', label: 'CLOUD' },
+  '03d': { symbol: '☁', label: 'CLOUD' },
+  '03n': { symbol: '☁', label: 'CLOUD' },
+  '04d': { symbol: '☁', label: 'CLOUD' },
+  '04n': { symbol: '☁', label: 'CLOUD' },
+  '09d': { symbol: '☂', label: 'RAIN' },
+  '09n': { symbol: '☂', label: 'RAIN' },
+  '10d': { symbol: '☔', label: 'SHOWERS' },
+  '10n': { symbol: '☔', label: 'SHOWERS' },
+  '11d': { symbol: '⚡', label: 'STORM' },
+  '11n': { symbol: '⚡', label: 'STORM' },
+  '13d': { symbol: '❄', label: 'SNOW' },
+  '13n': { symbol: '❄', label: 'SNOW' },
+  '50d': { symbol: '≋', label: 'MIST' },
+  '50n': { symbol: '≋', label: 'MIST' },
 };
 
 export default function WeatherWidget({ data }) {
@@ -39,13 +48,14 @@ export default function WeatherWidget({ data }) {
     );
   }
 
-  const icon = ICON_MAP[data.icon] || 'WEATHER';
+  const icon = ICON_MAP[data.icon] || { symbol: '*', label: 'WEATHER' };
 
   return (
     <WidgetCard title={data.city} icon="weather">
       <div className="flex flex-col items-center justify-center h-full gap-0.5">
-        <div className="text-[10px] tracking-[0.18em] px-2 py-0.5 rounded-full border border-glance-accent/40 text-glance-accent bg-glance-accent-dim mb-1">
-          {icon}
+        <div className="text-[10px] tracking-[0.14em] px-2 py-0.5 rounded-full border border-glance-accent/40 text-glance-accent bg-glance-accent-dim mb-1 flex items-center gap-1.5">
+          <span className="text-[14px] leading-none">{icon.symbol}</span>
+          <span>{icon.label}</span>
         </div>
         <div className="text-3xl font-bold text-glance-text leading-none">
           {Math.round(data.temp)}

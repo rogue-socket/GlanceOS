@@ -43,7 +43,7 @@ export default function GitHubWidget({ data }) {
   const weeks = data.contributions?.weeks || [];
 
   return (
-    <WidgetCard title={`GitHub · ${data.username}`} icon="github">
+    <WidgetCard title={`GitHub · ${data.username}`} icon="github" scaleWithCard={false}>
       <div className="flex flex-col gap-2 pt-1">
         <div className="flex items-center justify-between">
           <div className="text-[10px] uppercase tracking-[0.12em] text-glance-muted/80">Contribution Graph</div>
@@ -51,26 +51,20 @@ export default function GitHubWidget({ data }) {
         </div>
 
         {weeks.length > 0 ? (
-          <div className="overflow-x-auto pb-1">
-            <div
-              className="grid gap-[2px]"
-              style={{
-                gridAutoFlow: 'column',
-                gridTemplateRows: 'repeat(7, 8px)',
-                gridAutoColumns: '8px',
-                width: 'max-content',
-              }}
-            >
-              {weeks.flatMap((week, weekIndex) =>
-                week.map((level, dayIndex) => (
-                  <span
-                    key={`${weekIndex}-${dayIndex}`}
-                    className="rounded-[2px]"
-                    style={{ backgroundColor: contributionColor(level) }}
-                    title={`Level ${level}`}
-                  />
-                )),
-              )}
+          <div className="w-full pb-1">
+            <div className="w-full h-16 flex gap-[2px]">
+              {weeks.map((week, weekIndex) => (
+                <div key={`week-${weekIndex}`} className="flex-1 min-w-0 flex flex-col gap-[2px]">
+                  {week.map((level, dayIndex) => (
+                    <span
+                      key={`${weekIndex}-${dayIndex}`}
+                      className="rounded-[2px] flex-1"
+                      style={{ backgroundColor: contributionColor(level) }}
+                      title={`Level ${level}`}
+                    />
+                  ))}
+                </div>
+              ))}
             </div>
           </div>
         ) : (
