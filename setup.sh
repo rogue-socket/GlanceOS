@@ -157,6 +157,51 @@ fi
 echo "[3/4] Installing frontend dependencies..."
 cd frontend
 npm install
+
+if [ ! -f .env ]; then
+  echo "[*] Creating frontend .env from .env.example..."
+  if [ -f .env.example ]; then
+    cp .env.example .env
+  else
+    touch .env
+  fi
+fi
+
+echo "[*] Configure frontend backend connection (recommended)..."
+CURRENT_VITE_BACKEND_URL="$(read_env_value .env VITE_BACKEND_URL)"
+CURRENT_VITE_WS_URL="$(read_env_value .env VITE_WS_URL)"
+CURRENT_VITE_PROXY_API_TARGET="$(read_env_value .env VITE_PROXY_API_TARGET)"
+CURRENT_VITE_PROXY_WS_TARGET="$(read_env_value .env VITE_PROXY_WS_TARGET)"
+CURRENT_VITE_DISABLE_PROXY="$(read_env_value .env VITE_DISABLE_PROXY)"
+
+if [ -z "$CURRENT_VITE_BACKEND_URL" ]; then
+  CURRENT_VITE_BACKEND_URL="http://127.0.0.1:8000"
+fi
+if [ -z "$CURRENT_VITE_WS_URL" ]; then
+  CURRENT_VITE_WS_URL="ws://127.0.0.1:8000/ws"
+fi
+if [ -z "$CURRENT_VITE_PROXY_API_TARGET" ]; then
+  CURRENT_VITE_PROXY_API_TARGET="http://127.0.0.1:8000"
+fi
+if [ -z "$CURRENT_VITE_PROXY_WS_TARGET" ]; then
+  CURRENT_VITE_PROXY_WS_TARGET="ws://127.0.0.1:8000"
+fi
+if [ -z "$CURRENT_VITE_DISABLE_PROXY" ]; then
+  CURRENT_VITE_DISABLE_PROXY="false"
+fi
+
+VITE_BACKEND_URL_VALUE="$(prompt_key VITE_BACKEND_URL "Frontend backend URL (e.g. http://127.0.0.1:8000)" "$CURRENT_VITE_BACKEND_URL")"
+VITE_WS_URL_VALUE="$(prompt_key VITE_WS_URL "Frontend WS URL (e.g. ws://127.0.0.1:8000/ws)" "$CURRENT_VITE_WS_URL")"
+VITE_PROXY_API_TARGET_VALUE="$(prompt_key VITE_PROXY_API_TARGET "Vite proxy API target (e.g. http://127.0.0.1:8000)" "$CURRENT_VITE_PROXY_API_TARGET")"
+VITE_PROXY_WS_TARGET_VALUE="$(prompt_key VITE_PROXY_WS_TARGET "Vite proxy WS target (e.g. ws://127.0.0.1:8000)" "$CURRENT_VITE_PROXY_WS_TARGET")"
+VITE_DISABLE_PROXY_VALUE="$(prompt_key VITE_DISABLE_PROXY "Disable Vite proxy? true/false" "$CURRENT_VITE_DISABLE_PROXY")"
+
+upsert_env_var .env VITE_BACKEND_URL "$VITE_BACKEND_URL_VALUE"
+upsert_env_var .env VITE_WS_URL "$VITE_WS_URL_VALUE"
+upsert_env_var .env VITE_PROXY_API_TARGET "$VITE_PROXY_API_TARGET_VALUE"
+upsert_env_var .env VITE_PROXY_WS_TARGET "$VITE_PROXY_WS_TARGET_VALUE"
+upsert_env_var .env VITE_DISABLE_PROXY "$VITE_DISABLE_PROXY_VALUE"
+
 cd ..
 
 echo ""
@@ -168,4 +213,4 @@ echo "  Terminal 2:  cd frontend && npm run dev"
 echo ""
 echo "Then open http://localhost:5173"
 echo ""
-echo "Tip: set WEATHER_API_KEY, GITHUB_TOKEN, TODOIST_API_TOKEN, GOOGLE_CALENDAR_ICS_URL (or GOOGLE_CALENDAR_ID + GOOGLE_CALENDAR_API_KEY), and NEWS_LLM_API_KEY before running setup for non-interactive installs."
+echo "Tip: set WEATHER_API_KEY, GITHUB_TOKEN, TODOIST_API_TOKEN, GOOGLE_CALENDAR_ICS_URL (or GOOGLE_CALENDAR_ID + GOOGLE_CALENDAR_API_KEY), NEWS_LLM_API_KEY, and frontend vars (VITE_BACKEND_URL, VITE_WS_URL, VITE_PROXY_API_TARGET, VITE_PROXY_WS_TARGET, VITE_DISABLE_PROXY) before running setup for non-interactive installs."

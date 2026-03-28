@@ -27,6 +27,7 @@ chmod +x setup.sh
 ```
 
 This creates a Python venv, installs all dependencies, creates `backend/.env`, and prompts for API keys plus Google Calendar connection details during setup.
+It also creates `frontend/.env` and configures frontend backend/WS connection variables.
 
 For non-interactive installs, export keys before running setup:
 
@@ -36,6 +37,11 @@ export GITHUB_TOKEN="your_github_token"
 export TODOIST_API_TOKEN="your_todoist_token"
 export GOOGLE_CALENDAR_ICS_URL="your_google_calendar_ics_url"
 export NEWS_LLM_API_KEY="your_gemini_key"
+export VITE_BACKEND_URL="http://127.0.0.1:8000"
+export VITE_WS_URL="ws://127.0.0.1:8000/ws"
+export VITE_PROXY_API_TARGET="http://127.0.0.1:8000"
+export VITE_PROXY_WS_TARGET="ws://127.0.0.1:8000"
+export VITE_DISABLE_PROXY="false"
 ./setup.sh
 ```
 

@@ -1,11 +1,31 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 
+function wsUrlFromBackendUrl(backendUrl) {
+  try {
+    const parsed = new URL(backendUrl);
+    const protocol = parsed.protocol === 'https:' ? 'wss:' : 'ws:';
+    let path = parsed.pathname.replace(/\/+$/, '');
+    if (path.endsWith('/api')) {
+      path = path.slice(0, -4);
+    }
+    return `${protocol}//${parsed.host}${path}/ws`;
+  } catch {
+    return '';
+  }
+}
+
 function resolveWebSocketUrl() {
   const envUrl = import.meta.env.VITE_WS_URL;
   if (envUrl) return envUrl;
 
+  const backendUrl = import.meta.env.VITE_BACKEND_URL;
+  if (backendUrl) {
+    const derived = wsUrlFromBackendUrl(backendUrl);
+    if (derived) return derived;
+  }
+
   const { protocol, host } = window.location;
-  if (!host) return 'ws://localhost:8000/ws';
+  if (!host) return 'ws://127.0.0.1:8000/ws';
 
   const wsProtocol = protocol === 'https:' ? 'wss:' : 'ws:';
   return `${wsProtocol}//${host}/ws`;

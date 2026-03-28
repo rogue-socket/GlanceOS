@@ -1,16 +1,37 @@
-# React + Vite
+# GlanceOS Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## Run
 
-Currently, two official plugins are available:
+```bash
+npm install
+npm run dev
+```
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Remote Backend Setup (Fixes Vite ws proxy ECONNREFUSED/ECONNRESET)
 
-## React Compiler
+When backend is running on another machine, set frontend env vars before starting Vite.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+1. Copy `.env.example` to `.env`.
+2. Set:
 
-## Expanding the ESLint configuration
+```bash
+VITE_BACKEND_URL=http://<remote-machine-ip>:8000
+# optional explicit override
+# VITE_WS_URL=ws://<remote-machine-ip>:8000/ws
+```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Optional (if you want to avoid Vite proxy entirely):
+
+```bash
+VITE_DISABLE_PROXY=true
+```
+
+Then restart `npm run dev`.
+
+## Env Variables
+
+- `VITE_BACKEND_URL`: Base backend URL for deriving websocket endpoint.
+- `VITE_WS_URL`: Explicit websocket URL override.
+- `VITE_PROXY_API_TARGET`: Vite `/api` proxy target (default `http://localhost:8000`).
+- `VITE_PROXY_WS_TARGET`: Vite `/ws` proxy target (default `ws://localhost:8000`).
+- `VITE_DISABLE_PROXY`: Set `true` to disable `/api` and `/ws` proxy.
