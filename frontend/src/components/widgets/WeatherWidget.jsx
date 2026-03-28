@@ -26,6 +26,29 @@ function toNumber(value) {
   return Number.isFinite(n) ? n : null;
 }
 
+function rainChance(data) {
+  const explicit = Number(data?.rain_chance);
+  if (Number.isFinite(explicit)) return clamp(Math.round(explicit), 0, 100);
+
+  const description = String(data?.description || '').toLowerCase();
+  const icon = String(data?.icon || '');
+  const humidity = toNumber(data?.humidity);
+
+  if (description.includes('thunder')) return 85;
+  if (description.includes('shower') || description.includes('rain')) return 70;
+  if (description.includes('drizzle')) return 55;
+  if (description.includes('snow')) return 45;
+  if (icon.startsWith('09') || icon.startsWith('10') || icon.startsWith('11')) return 65;
+  if (humidity !== null && humidity >= 85) return 40;
+  if (humidity !== null && humidity >= 70) return 28;
+  return 12;
+}
+
+function weatherIconUrl(iconCode) {
+  if (!iconCode) return '';
+  return `https://openweathermap.org/img/wn/${iconCode}@2x.png`;
+}
+
 function weatherPalette(iconCode) {
   if (!iconCode) {
     return {
@@ -82,31 +105,6 @@ function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
 
-function toPercent(value) {
-  const n = toNumber(value);
-  if (n === null) return null;
-  return clamp(Math.round(n), 0, 100);
-}
-
-function comfortScore(temp, feelsLike, humidity) {
-  if (temp === null || feelsLike === null || humidity === null) return null;
-
-  const thermalDeltaPenalty = Math.abs(temp - feelsLike) * 4.5;
-  const humidityPenalty = Math.max(0, humidity - 60) * 0.7;
-  const drynessPenalty = Math.max(0, 35 - humidity) * 0.35;
-
-  const raw = 100 - thermalDeltaPenalty - humidityPenalty - drynessPenalty;
-  return clamp(Math.round(raw), 0, 100);
-}
-
-function comfortLabel(score) {
-  if (score === null) return { label: 'Unknown', color: 'text-glance-muted' };
-  if (score >= 80) return { label: 'Great', color: 'text-glance-success' };
-  if (score >= 60) return { label: 'Okay', color: 'text-glance-accent' };
-  if (score >= 40) return { label: 'Humid', color: 'text-glance-warning' };
-  return { label: 'Harsh', color: 'text-glance-danger' };
-}
-
 function cityLabel(city) {
   if (!city) return 'Weather';
   return city.replace(',', ', ');
@@ -115,13 +113,6 @@ function cityLabel(city) {
 function roundedTemp(value) {
   const n = toNumber(value);
   return n === null ? '--' : Math.round(n);
-}
-
-function formatWind(value) {
-  const n = toNumber(value);
-  if (n === null) return '--';
-  if (n < 10) return `${n.toFixed(1)} km/h`;
-  return `${Math.round(n)} km/h`;
 }
 
 function freshnessMeta(source, fetchedAt) {
@@ -187,51 +178,58 @@ export default function WeatherWidget({ data }) {
   const icon = ICON_MAP[data.icon] || { symbol: '*', label: 'WEATHER' };
   const palette = weatherPalette(data.icon);
   const temp = toNumber(data.temp);
-  const feelsLike = toNumber(data.feels_like);
-  const humidity = toNumber(data.humidity);
-  const windKph = toNumber(data.wind_kph);
-  const humidityPct = toPercent(humidity);
-  const comfort = comfortScore(temp, feelsLike, humidity);
-  const comfortMeta = comfortLabel(comfort);
+  const rain = rainChance(data);
+  const iconUrl = weatherIconUrl(data.icon);
   const freshness = freshnessMeta(data.source, data.fetched_at);
   const offlineReason = data.reason || data.description || 'Weather feed unavailable.';
   const isOffline = data.source === 'offline';
 
   return (
     <WidgetCard title="Weather" icon="weather">
-      <div
-        className="relative h-full overflow-hidden rounded-xl border border-glance-border/45 px-3 py-3"
-        style={{
-          background: `linear-gradient(160deg, ${palette.top}, ${palette.bottom})`,
-        }}
-      >
+      <div className="relative h-full overflow-hidden px-2.5 py-2.5">
+        <div
+          className="absolute inset-0 rounded-xl"
+          style={{
+            background: `linear-gradient(160deg, ${palette.top}, ${palette.bottom})`,
+          }}
+        />
         <div
           className="absolute -top-8 -right-8 h-20 w-20 rounded-full blur-2xl"
           style={{ background: palette.glow }}
         />
         <div className="absolute -bottom-6 -left-6 h-16 w-16 rounded-full blur-2xl bg-glance-accent/15" />
-
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_18%,rgba(255,255,255,0.12),transparent_42%)] pointer-events-none" />
 
-        <div className="relative h-full flex flex-col justify-between">
+        <div className="relative h-full flex flex-col justify-between gap-2">
           <div className="flex items-center justify-between gap-2">
-            <div className="text-[11px] text-glance-text/90 uppercase tracking-[0.11em] truncate">
-              {cityLabel(data.city)}
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span className="text-glance-accent text-xs" aria-hidden="true">⌖</span>
+              <div className="text-[11px] font-semibold text-glance-text/95 uppercase tracking-[0.11em] truncate">
+                {cityLabel(data.city)}
+              </div>
             </div>
             <div className={`text-[10px] uppercase tracking-[0.1em] px-2 py-0.5 rounded-full border ${freshness.chipClass}`}>
               {freshness.label}
             </div>
           </div>
 
-          <div className="grid grid-cols-[auto_1fr] gap-2.5 items-center mt-1.5">
+          <div className="grid grid-cols-[auto_1fr] gap-2.5 items-center">
             <div
-              className="h-12 w-12 rounded-2xl border flex items-center justify-center text-[24px] leading-none shadow-[0_6px_22px_-12px_rgba(56,189,248,0.75)]"
+              className="h-14 w-14 rounded-2xl border flex items-center justify-center leading-none shadow-[0_6px_22px_-12px_rgba(56,189,248,0.75)] bg-glance-bg/30 overflow-hidden"
               style={{
                 borderColor: palette.ring,
-                background: 'rgba(15,23,42,0.28)',
               }}
             >
-              {icon.symbol}
+              {iconUrl ? (
+                <img
+                  src={iconUrl}
+                  alt={icon.label}
+                  className="h-12 w-12 object-contain"
+                  loading="lazy"
+                />
+              ) : (
+                <span className="text-[24px]">{icon.symbol}</span>
+              )}
             </div>
             <div className="min-w-0">
               <div className="flex items-end gap-1">
@@ -246,13 +244,21 @@ export default function WeatherWidget({ data }) {
             </div>
           </div>
 
-          <div className="space-y-0.5 mt-1">
+          <div className="space-y-0.5">
             <div className="text-[12px] text-glance-text/85 capitalize line-clamp-2 leading-snug">
               {data.description}
             </div>
             <div className="text-[10px] text-glance-muted/85">
               {freshness.ageText}
             </div>
+          </div>
+
+          <div className="flex items-center justify-between rounded-lg border border-glance-border/35 bg-glance-bg/25 px-2.5 py-1.5">
+            <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.11em] text-glance-muted">
+              <span className="text-glance-accent" aria-hidden="true">☔</span>
+              Rain chance
+            </div>
+            <div className="text-sm font-semibold text-glance-accent tabular-nums">{rain}%</div>
           </div>
 
           {isOffline && (
@@ -265,42 +271,6 @@ export default function WeatherWidget({ data }) {
               </div>
             </div>
           )}
-
-          <div className="grid grid-cols-2 gap-2 mt-1.5">
-            <div className="rounded-lg border border-glance-border/35 bg-glance-bg/30 px-2 py-1.5 min-w-0">
-              <div className="text-[10px] uppercase tracking-[0.1em] text-glance-muted/85">Feels Like</div>
-              <div className="text-sm text-glance-text font-medium mt-0.5 tabular-nums">
-                {roundedTemp(feelsLike)}°C
-              </div>
-            </div>
-            <div className="rounded-lg border border-glance-border/35 bg-glance-bg/30 px-2 py-1.5 min-w-0">
-              <div className="text-[10px] uppercase tracking-[0.1em] text-glance-muted/85">Humidity</div>
-              <div className="text-sm text-glance-text font-medium mt-0.5 tabular-nums">
-                {humidityPct === null ? '--' : `${humidityPct}%`}
-              </div>
-              <div className="w-full h-1 rounded-full bg-glance-bg/50 mt-1 overflow-hidden">
-                <div
-                  className="h-full rounded-full bg-glance-accent transition-all duration-700"
-                  style={{ width: `${humidityPct ?? 0}%` }}
-                />
-              </div>
-            </div>
-            <div className="rounded-lg border border-glance-border/35 bg-glance-bg/30 px-2 py-1.5 min-w-0">
-              <div className="text-[10px] uppercase tracking-[0.1em] text-glance-muted/85">Wind</div>
-              <div className="text-sm text-glance-text font-medium mt-0.5 tabular-nums">
-                {formatWind(windKph)}
-              </div>
-            </div>
-            <div className="rounded-lg border border-glance-border/35 bg-glance-bg/30 px-2 py-1.5 min-w-0">
-              <div className="text-[10px] uppercase tracking-[0.1em] text-glance-muted/85">Comfort</div>
-              <div className={`text-sm font-semibold mt-0.5 tabular-nums ${comfortMeta.color}`}>
-                {comfort === null ? '--' : `${comfort}%`}
-              </div>
-              <div className={`text-[10px] mt-0.5 uppercase tracking-[0.08em] ${comfortMeta.color}`}>
-                {comfortMeta.label}
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </WidgetCard>

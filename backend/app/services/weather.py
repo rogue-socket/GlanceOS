@@ -19,6 +19,32 @@ def _to_kph(speed_mps: float | int | None) -> float | None:
         return None
 
 
+def _to_percent(value: float | int | None) -> int | None:
+    if value is None:
+        return None
+    try:
+        return max(0, min(100, int(round(float(value)))))
+    except (TypeError, ValueError):
+        return None
+
+
+async def _fetch_rain_chance(client: httpx.AsyncClient, city: str, api_key: str) -> int | None:
+    """Return next-interval rain probability percentage when available."""
+    try:
+        forecast_url = "https://api.openweathermap.org/data/2.5/forecast"
+        params = {"q": city, "appid": api_key, "units": "metric", "cnt": 1}
+        resp = await client.get(forecast_url, params=params)
+        resp.raise_for_status()
+        raw = resp.json()
+        first_item = (raw.get("list") or [{}])[0]
+        pop_value = first_item.get("pop")
+        if pop_value is None:
+            return None
+        return _to_percent(float(pop_value) * 100)
+    except Exception:
+        return None
+
+
 async def fetch_weather(city: str = "Hyderabad,IN") -> dict:
     """Fetch weather from OpenWeatherMap. Falls back to offline placeholder."""
     settings = get_settings()
@@ -37,6 +63,7 @@ async def fetch_weather(city: str = "Hyderabad,IN") -> dict:
             resp = await client.get(url, params=params)
             resp.raise_for_status()
             raw = resp.json()
+            rain_chance = await _fetch_rain_chance(client, city, api_key)
 
         return {
             "type": "weather",
@@ -48,6 +75,7 @@ async def fetch_weather(city: str = "Hyderabad,IN") -> dict:
                 "pressure_hpa": raw["main"].get("pressure"),
                 "description": raw["weather"][0]["description"],
                 "icon": raw["weather"][0]["icon"],
+                "rain_chance": rain_chance,
                 "wind_kph": _to_kph(raw.get("wind", {}).get("speed")),
                 "wind_deg": raw.get("wind", {}).get("deg"),
                 "visibility_km": round(raw.get("visibility", 0) / 1000, 1) if raw.get("visibility") is not None else None,
@@ -73,6 +101,7 @@ def _get_offline_weather(city: str, reason: str) -> dict:
         "pressure_hpa": None,
         "description": reason,
         "icon": "01d",
+        "rain_chance": None,
         "wind_kph": None,
         "wind_deg": None,
         "visibility_km": None,

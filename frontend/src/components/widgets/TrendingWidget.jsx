@@ -33,12 +33,14 @@ export default function TrendingWidget({ data }) {
   }
 
   const repos = data.repos || [];
+  const sourceTone = (data.source || '').includes('github') ? 'text-glance-success' : 'text-glance-warning';
 
   return (
     <WidgetCard title={`Trending · ${data.since || 'daily'}`} icon="trending">
       <div className="flex flex-col gap-1 pt-1">
-        <div className="text-[10px] text-glance-muted/70 uppercase tracking-[0.12em]">
-          Source: {data.source || 'live'}
+        <div className="text-[10px] text-glance-muted/70 uppercase tracking-[0.12em] flex items-center gap-1.5">
+          <span aria-hidden="true">◉</span>
+          <span className={sourceTone}>Source: {data.source || 'live'}</span>
         </div>
         {repos.length === 0 && (
           <div className="text-sm text-glance-muted text-center">
@@ -46,16 +48,20 @@ export default function TrendingWidget({ data }) {
           </div>
         )}
         {repos.map((repo, i) => (
-          <div
+          <a
             key={repo.name || i}
+            href={repo.url || `https://github.com/${repo.name}`}
+            target="_blank"
+            rel="noreferrer noopener"
             className="flex items-start gap-2 py-1.5 border-b border-glance-border/20 last:border-0 hover:bg-glance-accent-dim/30 -mx-1 px-1 rounded transition-colors"
           >
             <span className="text-glance-accent/40 text-[10px] font-mono mt-0.5 shrink-0">
               {String(i + 1).padStart(2, '0')}
             </span>
             <div className="min-w-0 flex-1">
-              <div className="text-xs text-glance-accent font-medium truncate">
-                {repo.name}
+              <div className="text-xs text-glance-accent font-semibold truncate flex items-center gap-1">
+                <span aria-hidden="true">🔗</span>
+                <span>{repo.name}</span>
               </div>
               {repo.description && (
                 <div className="text-[10px] text-glance-muted leading-snug line-clamp-1 mt-0.5">
@@ -72,15 +78,15 @@ export default function TrendingWidget({ data }) {
                     {repo.language}
                   </span>
                 )}
-                <span className="text-[10px] text-glance-muted">Stars {formatStars(repo.stars)}</span>
+                <span className="text-[10px] text-glance-muted"><span aria-hidden="true">★</span> {formatStars(repo.stars)}</span>
                 {repo.today_stars > 0 && (
                   <span className="text-[10px] text-glance-success font-medium">
-                    +{formatStars(repo.today_stars)} today
+                    <span aria-hidden="true">▲</span> +{formatStars(repo.today_stars)} today
                   </span>
                 )}
               </div>
             </div>
-          </div>
+          </a>
         ))}
       </div>
     </WidgetCard>
