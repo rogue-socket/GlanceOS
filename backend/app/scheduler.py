@@ -13,6 +13,7 @@ from app.services.github import fetch_github_events
 from app.services.cricket import fetch_cricket_scores
 from app.services.news import fetch_news
 from app.services.trending import fetch_github_trending
+from app.services.f1 import fetch_f1_data
 from app.services.lofi import get_lofi_scene
 from app.services.calendar import fetch_calendar_events
 from app.services.todoist import fetch_todoist_tasks
@@ -34,6 +35,7 @@ API_JOB_INTERVAL_SECONDS = {
     "cricket": 120,
     "news": 900,
     "trending": 1800,
+    "f1": 300,
     "calendar": 300,
     "todo": 120,
 }
@@ -149,6 +151,16 @@ async def _push_trending() -> None:
         logger.debug("Failed to push trending")
 
 
+async def _push_f1() -> None:
+    try:
+        _log_api_tick("f1")
+        data = await fetch_f1_data()
+        _cache["f1"] = data
+        await manager.broadcast(data)
+    except Exception:
+        logger.debug("Failed to push f1")
+
+
 async def _push_lofi() -> None:
     try:
         data = await asyncio.to_thread(get_lofi_scene)
@@ -192,6 +204,7 @@ def start_scheduler() -> None:
     scheduler.add_job(_push_cricket, "interval", minutes=2, id="cricket", next_run_time=now)
     scheduler.add_job(_push_news, "interval", minutes=15, id="news", next_run_time=now)
     scheduler.add_job(_push_trending, "interval", minutes=30, id="trending", next_run_time=now)
+    scheduler.add_job(_push_f1, "interval", minutes=5, id="f1", next_run_time=now)
     scheduler.add_job(_push_lofi, "interval", seconds=30, id="lofi", next_run_time=now)
     scheduler.add_job(_push_calendar, "interval", minutes=5, id="calendar", next_run_time=now)
     scheduler.add_job(_push_todo, "interval", minutes=2, id="todo", next_run_time=now)

@@ -6,6 +6,7 @@ from app.services.github import fetch_github_events
 from app.services.cricket import fetch_cricket_scores
 from app.services.news import fetch_news
 from app.services.trending import fetch_github_trending
+from app.services.f1 import fetch_f1_data
 from app.services.lofi import get_lofi_scene
 from app.services.calendar import fetch_calendar_events
 from app.services.todoist import fetch_todoist_tasks
@@ -58,6 +59,11 @@ async def news(category: str = "technology"):
 @router.get("/trending")
 async def trending(language: str = "", since: str = "daily"):
     return await fetch_github_trending(language, since)
+
+
+@router.get("/f1")
+async def f1():
+    return await fetch_f1_data()
 
 
 @router.get("/lofi")

@@ -12,12 +12,14 @@ const ICON_BADGE_MAP = {
   todo: 'TOD',
   lofi: 'LOF',
   clock: 'CLK',
+  f1: 'F1',
   '💻': 'SYS',
   '🌤️': 'WTH',
   '🐙': 'GIT',
   '🏏': 'CRT',
   '📰': 'NWS',
   '🔥': 'TRD',
+  '🏎️': 'F1',
 };
 
 const LEGACY_ICON_MAP = {
@@ -28,6 +30,7 @@ const LEGACY_ICON_MAP = {
   '📰': 'news',
   '🔥': 'trending',
   '📅': 'calendar',
+  '🏎️': 'f1',
 };
 
 const SVG_ICON_NAMES = new Set([
@@ -41,6 +44,7 @@ const SVG_ICON_NAMES = new Set([
   'todo',
   'lofi',
   'clock',
+  'f1',
 ]);
 
 function IconSvg({ iconName }) {
@@ -125,6 +129,17 @@ function IconSvg({ iconName }) {
           <circle cx="12" cy="12" r="8" />
           <path d="M12 8v5" />
           <path d="M12 13l3 2" />
+        </svg>
+      );
+    case 'f1':
+      return (
+        <svg viewBox="0 0 24 24" className="widget-icon-svg" aria-hidden="true">
+          <path d="M3 15h8" />
+          <path d="M11 15l3-3h5" />
+          <path d="M7 15l-2 4" />
+          <circle cx="7" cy="19" r="1.4" />
+          <circle cx="17" cy="19" r="1.4" />
+          <path d="M19 12h2" />
         </svg>
       );
     default:

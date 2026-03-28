@@ -15,6 +15,7 @@ import TrendingWidget from './widgets/TrendingWidget';
 import LofiWidget from './widgets/LofiWidget';
 import CalendarWidget from './widgets/CalendarWidget';
 import TodoWidget from './widgets/TodoWidget';
+import F1Widget from './widgets/F1Widget';
 
 const STORAGE_KEY = 'glanceos-layouts';
 
@@ -30,6 +31,7 @@ const DEFAULT_LAYOUTS = {
     { i: 'calendar', x: 0,  y: 8, w: 4, h: 4, minW: 3, minH: 3 },
     { i: 'github',   x: 4,  y: 8, w: 8, h: 4, minW: 4, minH: 2 },
     { i: 'todo',     x: 0,  y: 12, w: 12, h: 3, minW: 4, minH: 2 },
+    { i: 'f1',       x: 0,  y: 15, w: 12, h: 5, minW: 4, minH: 3 },
   ],
   md: [
     { i: 'clock',    x: 0, y: 0, w: 5, h: 3, minW: 2, minH: 2 },
@@ -42,6 +44,7 @@ const DEFAULT_LAYOUTS = {
     { i: 'github',   x: 5, y: 11, w: 5, h: 4, minW: 3, minH: 2 },
     { i: 'calendar', x: 0, y: 16, w: 10, h: 4, minW: 4, minH: 3 },
     { i: 'todo',     x: 0, y: 20, w: 10, h: 4, minW: 4, minH: 2 },
+    { i: 'f1',       x: 0, y: 24, w: 10, h: 5, minW: 4, minH: 3 },
   ],
   sm: [
     { i: 'clock',    x: 0, y: 0,  w: 6, h: 3, minW: 2, minH: 2 },
@@ -54,6 +57,7 @@ const DEFAULT_LAYOUTS = {
     { i: 'github',   x: 0, y: 27, w: 6, h: 4, minW: 3, minH: 2 },
     { i: 'calendar', x: 0, y: 31, w: 6, h: 4, minW: 3, minH: 3 },
     { i: 'todo',     x: 0, y: 35, w: 6, h: 4, minW: 3, minH: 2 },
+    { i: 'f1',       x: 0, y: 39, w: 6, h: 5, minW: 3, minH: 3 },
   ],
 };
 
@@ -250,6 +254,9 @@ export default function Dashboard() {
           </div>
           <div key="todo">
             <TodoWidget data={widgetData.todo} />
+          </div>
+          <div key="f1">
+            <F1Widget data={widgetData.f1} />
           </div>
         </Responsive>
       </div>
