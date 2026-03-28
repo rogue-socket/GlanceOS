@@ -20,30 +20,78 @@ function statusColor(status) {
   return 'text-glance-muted';
 }
 
-function resolveCricketApiUrl() {
+function resolveCricketApiBaseUrl() {
   const envUrl = import.meta.env.VITE_BACKEND_URL;
   if (envUrl) {
     try {
       const parsed = new URL(envUrl);
       let path = parsed.pathname.replace(/\/+$/, '');
       if (path.endsWith('/api')) {
-        return `${parsed.origin}${path}/cricket`;
+        return `${parsed.origin}${path}`;
       }
-      return `${parsed.origin}${path}/api/cricket`;
+      return `${parsed.origin}${path}/api`;
     } catch {
       // Fall through to same-origin fallback.
     }
   }
 
   if (typeof window !== 'undefined' && window.location?.origin) {
-    return `${window.location.origin}/api/cricket`;
+    return `${window.location.origin}/api`;
   }
 
-  return '/api/cricket';
+  return '/api';
+}
+
+function extractWidgetPayload(payload) {
+  if (payload?.type === 'cricket' && payload?.data) {
+    return payload.data;
+  }
+  if (payload && typeof payload === 'object') {
+    return payload;
+  }
+  return null;
+}
+
+function formatRefreshTime(isoValue) {
+  if (!isoValue) return '--';
+  try {
+    return new Date(isoValue).toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    });
+  } catch {
+    return '--';
+  }
 }
 
 export default function CricketWidget({ data }) {
   const [apiData, setApiData] = useState(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [refreshError, setRefreshError] = useState('');
+
+  async function refreshNow() {
+    setIsRefreshing(true);
+    setRefreshError('');
+    try {
+      const base = resolveCricketApiBaseUrl();
+      const resp = await fetch(`${base}/cricket/refresh`, { method: 'POST' });
+      if (!resp.ok) {
+        setRefreshError('Refresh failed');
+        return;
+      }
+
+      const payload = await resp.json();
+      const next = extractWidgetPayload(payload);
+      if (next) {
+        setApiData(next);
+      }
+    } catch {
+      setRefreshError('Refresh failed');
+    } finally {
+      setIsRefreshing(false);
+    }
+  }
 
   useEffect(() => {
     if (data) {
@@ -55,14 +103,14 @@ export default function CricketWidget({ data }) {
 
     async function loadFromApi() {
       try {
-        const resp = await fetch(resolveCricketApiUrl(), { method: 'GET' });
+        const base = resolveCricketApiBaseUrl();
+        const resp = await fetch(`${base}/cricket`, { method: 'GET' });
         if (!resp.ok) return;
         const payload = await resp.json();
         if (cancelled) return;
-        if (payload?.type === 'cricket' && payload?.data) {
-          setApiData(payload.data);
-        } else if (payload && typeof payload === 'object') {
-          setApiData(payload);
+        const next = extractWidgetPayload(payload);
+        if (next) {
+          setApiData(next);
         }
       } catch {
         // Ignore network errors; websocket can still recover.
@@ -78,23 +126,73 @@ export default function CricketWidget({ data }) {
     };
   }, [data]);
 
-  const effectiveData = useMemo(() => data || apiData, [data, apiData]);
+  const effectiveData = useMemo(() => apiData || data, [apiData, data]);
 
   if (!effectiveData) {
     return (
       <WidgetCard title="Cricket" icon="cricket">
-        <div className="flex items-center justify-center h-full text-glance-muted text-sm">
-          Waiting for data…
+        <div className="flex flex-col gap-2.5 pt-1">
+          <div className="flex items-center justify-between gap-2">
+            <div className="text-[10px] uppercase tracking-[0.12em] text-glance-muted/70">
+              No cached match data
+            </div>
+            <button
+              type="button"
+              onClick={refreshNow}
+              disabled={isRefreshing}
+              className="text-[10px] px-2 py-1 rounded-md border border-glance-border/50 text-glance-accent hover:bg-glance-accent-dim disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {isRefreshing ? 'Refreshing...' : 'Refresh'}
+            </button>
+          </div>
+          <div className="text-sm text-glance-muted text-center py-2">
+            Waiting for scheduled fetch or manual refresh
+          </div>
+          {refreshError && (
+            <div className="text-[10px] text-glance-danger text-center">{refreshError}</div>
+          )}
         </div>
       </WidgetCard>
     );
   }
 
   const matches = effectiveData.matches || [];
+  const schedule = effectiveData.schedule || null;
+  const autoAt = formatRefreshTime(effectiveData.last_auto_refresh_at);
+  const manualAt = formatRefreshTime(effectiveData.last_manual_refresh_at);
 
   return (
     <WidgetCard title="Cricket" icon="cricket">
       <div className="flex flex-col gap-2.5 pt-1">
+        <div className="flex items-center justify-between gap-2">
+          <div className="text-[10px] uppercase tracking-[0.12em] text-glance-muted/70">
+            source: {effectiveData.source || 'cricket'}
+          </div>
+          <button
+            type="button"
+            onClick={refreshNow}
+            disabled={isRefreshing}
+            className="text-[10px] px-2 py-1 rounded-md border border-glance-border/50 text-glance-accent hover:bg-glance-accent-dim disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            {isRefreshing ? 'Refreshing...' : 'Refresh'}
+          </button>
+        </div>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="text-[10px] px-2 py-0.5 rounded-full border border-glance-border/40 text-glance-muted">
+            Auto: {autoAt}
+          </span>
+          <span className="text-[10px] px-2 py-0.5 rounded-full border border-glance-border/40 text-glance-muted">
+            Manual: {manualAt}
+          </span>
+        </div>
+        {schedule && (
+          <div className="text-[10px] text-glance-muted/70">
+            Auto: {schedule.window_start} - {schedule.window_end}, final {schedule.final_call}
+          </div>
+        )}
+        {refreshError && (
+          <div className="text-[10px] text-glance-danger">{refreshError}</div>
+        )}
         {matches.length === 0 && (
           <div className="text-sm text-glance-muted text-center py-2">
             No live matches

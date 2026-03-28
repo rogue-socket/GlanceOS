@@ -3,14 +3,13 @@ from fastapi import APIRouter
 from app.services.system_monitor import get_system_stats
 from app.services.weather import fetch_weather
 from app.services.github import fetch_github_events
-from app.services.cricket import fetch_cricket_scores
 from app.services.news import fetch_news
 from app.services.trending import fetch_github_trending
 from app.services.f1 import fetch_f1_data
 from app.services.lofi import get_lofi_scene
 from app.services.calendar import fetch_calendar_events
 from app.services.todoist import fetch_todoist_tasks
-from app.scheduler import get_all_cached
+from app.scheduler import cricket_schedule_meta, get_all_cached, get_cached, refresh_cricket_now
 from app.config import get_settings
 
 settings = get_settings()
@@ -48,7 +47,27 @@ async def github(username: str = settings.github_username):
 
 @router.get("/cricket")
 async def cricket():
-    return await fetch_cricket_scores(settings.cricket_api_key)
+    cached = get_cached("cricket")
+    if cached:
+        if isinstance(cached, dict) and isinstance(cached.get("data"), dict):
+            cached["data"].setdefault("schedule", cricket_schedule_meta())
+        return cached
+
+    return {
+        "type": "cricket",
+        "data": {
+            "matches": [],
+            "source": "cache",
+            "status": "empty",
+            "message": "No cached cricket data yet",
+            "schedule": cricket_schedule_meta(),
+        },
+    }
+
+
+@router.post("/cricket/refresh")
+async def cricket_refresh():
+    return await refresh_cricket_now()
 
 
 @router.get("/news")

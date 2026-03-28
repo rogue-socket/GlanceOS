@@ -12,6 +12,15 @@ ESPN_SCOREBOARD_URL = "https://site.api.espn.com/apis/site/v2/sports/cricket/sco
 async def fetch_cricket_scores(api_key: str = "") -> dict:
     """Fetch live IPL / international cricket scores."""
 
+    # Prefer keyed source when available for reliability.
+    if api_key:
+        try:
+            data = await _fetch_cricapi(api_key)
+            if data.get("data", {}).get("matches"):
+                return data
+        except Exception:
+            logger.exception("cricapi failed")
+
     # Preferred live source: ESPN public scoreboard API.
     try:
         data = await _fetch_espn_scoreboard()
@@ -27,12 +36,6 @@ async def fetch_cricket_scores(api_key: str = "") -> dict:
             return data
     except Exception:
         logger.debug("Legacy ESPN endpoint failed, trying cricapi")
-
-    if api_key:
-        try:
-            return await _fetch_cricapi(api_key)
-        except Exception:
-            logger.exception("cricapi failed")
 
     return {
         "type": "cricket",

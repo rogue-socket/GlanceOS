@@ -106,6 +106,7 @@ You can still edit `backend/.env` manually:
 |-------------------|--------------------------------------|----------|
 | `WEATHER_API_KEY` | OpenWeatherMap API key               | No*      |
 | `GITHUB_TOKEN`    | GitHub personal access token         | No*      |
+| `CRICKET_API_KEY` | CricketData/CricAPI key              | No*      |
 | `TODOIST_API_TOKEN` | Todoist API token                  | No |
 | `GOOGLE_CALENDAR_ICS_URL` | Google Calendar ICS URL (private/public calendars) | No |
 | `GOOGLE_CALENDAR_ID` | Google Calendar ID for API mode | No |
@@ -117,6 +118,7 @@ You can still edit `backend/.env` manually:
 | `NEWS_LLM_MODEL` | LLM model for News summaries (default `gemini-2.0-flash-lite`) | No |
 | `WEATHER_CITY`    | Default weather city (e.g. Hyderabad,IN) | No |
 | `GITHUB_USERNAME` | GitHub username for activity widget  | No       |
+| `CRICKET_TIMEZONE` | Cricket schedule timezone (default `Asia/Kolkata`) | No |
 | `HOST`            | Backend bind address (default `0.0.0.0`) | No   |
 | `PORT`            | Backend port (default `8000`)        | No       |
 | `LOG_LEVEL`       | Backend log verbosity (default `WARNING`) | No |
@@ -126,6 +128,7 @@ You can still edit `backend/.env` manually:
 Get your keys:
 - Weather: https://openweathermap.org/api (free tier)
 - GitHub: https://github.com/settings/tokens (no scopes needed for public data)
+- Cricket: https://cricketdata.org/signup.aspx (free plan available)
 - Todoist: https://app.todoist.com/app/settings/integrations/developer
 - News LLM (optional): Gemini API key from Google AI Studio
 - Google Calendar:
@@ -140,7 +143,7 @@ Get your keys:
 | Lofi Art   | ASCII scenes (local)  | 12s cycle       |
 | Weather    | OpenWeatherMap API    | 10 min          |
 | System     | psutil (CPU/RAM/Disk) | 3s              |
-| Cricket    | ESPN / CricAPI        | 2 min           |
+| Cricket    | ESPN / CricAPI        | Auto every 10 min from 19:30-23:30 + final call at 00:00 |
 | News       | Hacker News + Google RSS + article-content summaries | 15 min |
 | Trending   | GitHub Trending       | 30 min          |
 | GitHub     | GitHub Events API     | 5 min           |

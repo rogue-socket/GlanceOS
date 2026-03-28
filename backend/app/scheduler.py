@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from datetime import datetime
+from datetime import datetime, time, timezone
 from collections import defaultdict
+from zoneinfo import ZoneInfo
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
@@ -32,13 +33,21 @@ _api_call_counts: dict[str, int] = defaultdict(int)
 API_JOB_INTERVAL_SECONDS = {
     "weather": 300,
     "github": 300,
-    "cricket": 120,
+    "cricket": 600,
     "news": 900,
     "trending": 1800,
     "f1": 300,
     "calendar": 300,
     "todo": 120,
 }
+
+CRICKET_WINDOW_START = time(hour=19, minute=30)
+CRICKET_WINDOW_END = time(hour=23, minute=30)
+CRICKET_FINAL_CALL = time(hour=0, minute=0)
+CRICKET_SLOT_MINUTES = 10
+_cricket_last_slot_key: str | None = None
+_cricket_last_auto_refresh_at: str | None = None
+_cricket_last_manual_refresh_at: str | None = None
 
 ANSI_RESET = "\033[0m"
 
@@ -83,6 +92,35 @@ def get_all_cached() -> dict:
     return dict(_cache)
 
 
+def _get_cricket_timezone() -> timezone | ZoneInfo:
+    tz_name = (settings.cricket_timezone or "").strip()
+    if not tz_name:
+        return timezone.utc
+    try:
+        return ZoneInfo(tz_name)
+    except Exception:
+        logger.warning("Invalid cricket timezone %s; falling back to UTC", tz_name)
+        return timezone.utc
+
+
+CRICKET_TIMEZONE = _get_cricket_timezone()
+
+
+def _current_cricket_slot_key(now_local: datetime) -> str | None:
+    minutes_now = now_local.hour * 60 + now_local.minute
+    start_minutes = CRICKET_WINDOW_START.hour * 60 + CRICKET_WINDOW_START.minute
+    end_minutes = CRICKET_WINDOW_END.hour * 60 + CRICKET_WINDOW_END.minute
+
+    if start_minutes <= minutes_now <= end_minutes:
+        if (minutes_now - start_minutes) % CRICKET_SLOT_MINUTES == 0:
+            return f"window:{now_local.date().isoformat()}:{minutes_now}"
+
+    if now_local.time().hour == CRICKET_FINAL_CALL.hour and now_local.time().minute == CRICKET_FINAL_CALL.minute:
+        return f"final:{now_local.date().isoformat()}"
+
+    return None
+
+
 # ── Jobs ──────────────────────────────────────────────
 
 
@@ -121,14 +159,82 @@ async def _push_clock() -> None:
     await manager.broadcast(data)
 
 
-async def _push_cricket() -> None:
+def cricket_schedule_meta(now_local: datetime | None = None) -> dict:
+    current = now_local or datetime.now(CRICKET_TIMEZONE)
+    slot = _current_cricket_slot_key(current)
+    return {
+        "timezone": str(CRICKET_TIMEZONE),
+        "window_start": "19:30",
+        "window_end": "23:30",
+        "final_call": "00:00",
+        "slot_minutes": CRICKET_SLOT_MINUTES,
+        "in_auto_window": slot is not None,
+        "current_local_time": current.isoformat(),
+    }
+
+
+async def _push_cricket(force: bool = False) -> dict | None:
+    global _cricket_last_slot_key
+    global _cricket_last_auto_refresh_at
+    global _cricket_last_manual_refresh_at
+
     try:
+        slot_key: str | None = None
+        if not force:
+            now_local = datetime.now(CRICKET_TIMEZONE)
+            slot_key = _current_cricket_slot_key(now_local)
+            if not slot_key:
+                return get_cached("cricket")
+            if slot_key == _cricket_last_slot_key:
+                return get_cached("cricket")
+
         _log_api_tick("cricket")
         data = await fetch_cricket_scores(settings.cricket_api_key)
+        refreshed_at = datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+        if force:
+            _cricket_last_manual_refresh_at = refreshed_at
+        else:
+            _cricket_last_auto_refresh_at = refreshed_at
+
+        if isinstance(data, dict):
+            payload = data.get("data") if isinstance(data.get("data"), dict) else {}
+            payload["schedule"] = cricket_schedule_meta()
+            payload["last_refresh_mode"] = "manual" if force else "auto"
+            payload["updated_at"] = refreshed_at
+            payload["last_auto_refresh_at"] = _cricket_last_auto_refresh_at
+            payload["last_manual_refresh_at"] = _cricket_last_manual_refresh_at
+            data["data"] = payload
+
         _cache["cricket"] = data
+        if slot_key:
+            _cricket_last_slot_key = slot_key
         await manager.broadcast(data)
+        return data
     except Exception:
         logger.debug("Failed to push cricket scores")
+        return get_cached("cricket")
+
+
+async def refresh_cricket_now() -> dict:
+    refreshed = await _push_cricket(force=True)
+    if refreshed:
+        return refreshed
+
+    cached = get_cached("cricket")
+    if cached:
+        return cached
+
+    return {
+        "type": "cricket",
+        "data": {
+            "matches": [],
+            "source": "cache",
+            "status": "empty",
+            "message": "No cached cricket data yet",
+            "schedule": cricket_schedule_meta(),
+        },
+    }
 
 
 async def _push_news() -> None:
@@ -201,7 +307,7 @@ def start_scheduler() -> None:
     scheduler.add_job(_push_system_stats, "interval", seconds=3, id="system")
     scheduler.add_job(_push_weather, "interval", minutes=5, id="weather", next_run_time=now)
     scheduler.add_job(_push_github, "interval", minutes=5, id="github", next_run_time=now)
-    scheduler.add_job(_push_cricket, "interval", minutes=2, id="cricket", next_run_time=now)
+    scheduler.add_job(_push_cricket, "interval", seconds=60, id="cricket", next_run_time=now)
     scheduler.add_job(_push_news, "interval", minutes=15, id="news", next_run_time=now)
     scheduler.add_job(_push_trending, "interval", minutes=30, id="trending", next_run_time=now)
     scheduler.add_job(_push_f1, "interval", minutes=5, id="f1", next_run_time=now)

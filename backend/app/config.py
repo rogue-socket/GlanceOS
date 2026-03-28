@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     weather_api_key: str = ""
     github_token: str = ""
     cricket_api_key: str = ""
+    cricket_timezone: str = "Asia/Kolkata"
     todoist_api_token: str = ""
     google_calendar_id: str = ""
     google_calendar_api_key: str = ""
