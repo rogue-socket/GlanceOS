@@ -7,6 +7,8 @@ from app.services.cricket import fetch_cricket_scores
 from app.services.news import fetch_news
 from app.services.trending import fetch_github_trending
 from app.services.lofi import get_lofi_scene
+from app.services.calendar import fetch_calendar_events
+from app.services.todoist import fetch_todoist_tasks
 from app.scheduler import get_all_cached
 from app.config import get_settings
 
@@ -61,3 +63,13 @@ async def trending(language: str = "", since: str = "daily"):
 @router.get("/lofi")
 async def lofi():
     return get_lofi_scene()
+
+
+@router.get("/calendar")
+async def calendar():
+    return await fetch_calendar_events()
+
+
+@router.get("/todo")
+async def todo(project_id: str = ""):
+    return await fetch_todoist_tasks(project_id or None)

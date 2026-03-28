@@ -8,6 +8,8 @@ const ICON_BADGE_MAP = {
   cricket: 'CRT',
   news: 'NWS',
   trending: 'TRD',
+  calendar: 'CAL',
+  todo: 'TOD',
   lofi: 'LOF',
   clock: 'CLK',
   '💻': 'SYS',
@@ -25,6 +27,7 @@ const LEGACY_ICON_MAP = {
   '🏏': 'cricket',
   '📰': 'news',
   '🔥': 'trending',
+  '📅': 'calendar',
 };
 
 const SVG_ICON_NAMES = new Set([
@@ -34,6 +37,8 @@ const SVG_ICON_NAMES = new Set([
   'cricket',
   'news',
   'trending',
+  'calendar',
+  'todo',
   'lofi',
   'clock',
 ]);
@@ -85,6 +90,24 @@ function IconSvg({ iconName }) {
         <svg viewBox="0 0 24 24" className="widget-icon-svg" aria-hidden="true">
           <path d="M4 16l5-5 4 4 7-8" />
           <path d="M14 7h6v6" />
+        </svg>
+      );
+    case 'calendar':
+      return (
+        <svg viewBox="0 0 24 24" className="widget-icon-svg" aria-hidden="true">
+          <rect x="3" y="5" width="18" height="16" rx="2" />
+          <path d="M8 3v4" />
+          <path d="M16 3v4" />
+          <path d="M3 10h18" />
+        </svg>
+      );
+    case 'todo':
+      return (
+        <svg viewBox="0 0 24 24" className="widget-icon-svg" aria-hidden="true">
+          <rect x="4" y="4" width="16" height="16" rx="2" />
+          <path d="M8 9h8" />
+          <path d="M8 13h8" />
+          <path d="M8 17h5" />
         </svg>
       );
     case 'lofi':

@@ -6,6 +6,27 @@ function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
 
+function normalizeFrame(frame) {
+  if (!frame) return '';
+
+  const lines = frame.replace(/\r/g, '').split('\n');
+  while (lines.length > 0 && lines[0].trim() === '') lines.shift();
+  while (lines.length > 0 && lines[lines.length - 1].trim() === '') lines.pop();
+
+  let minIndent = Infinity;
+  for (const line of lines) {
+    if (!line.trim()) continue;
+    const indent = line.match(/^\s*/)?.[0]?.length || 0;
+    if (indent < minIndent) minIndent = indent;
+  }
+
+  if (Number.isFinite(minIndent) && minIndent > 0) {
+    return lines.map(line => line.slice(Math.min(minIndent, line.length))).join('\n');
+  }
+
+  return lines.join('\n');
+}
+
 const SPINNING_DONUT_FRAMES = [
   String.raw`
       .-"""-.
@@ -188,9 +209,9 @@ export default function LofiWidget({ data }) {
   const scene = data?.art || data?.frames ? data : LOCAL_SCENES[sceneIdx];
   const sceneFrames = useMemo(() => {
     if (Array.isArray(scene?.frames) && scene.frames.length > 0) {
-      return scene.frames;
+      return scene.frames.map(normalizeFrame);
     }
-    return [scene?.art || ''];
+    return [normalizeFrame(scene?.art || '')];
   }, [scene]);
   const frameMs = scene?.frameMs || scene?.frame_ms || 120;
 
@@ -226,9 +247,9 @@ export default function LofiWidget({ data }) {
       const usableWidth = Math.max(rect.width - 16, 80);
       const usableHeight = Math.max(rect.height - 14, 60);
 
-      const byWidth = usableWidth / (maxChars * 0.62);
-      const byHeight = usableHeight / (lineCount * 1.3);
-      const nextFont = clamp(Math.floor(Math.min(byWidth, byHeight)), 7, 28);
+      const byWidth = usableWidth / (maxChars * 0.56);
+      const byHeight = usableHeight / (lineCount * 1.18);
+      const nextFont = clamp(Math.floor(Math.min(byWidth, byHeight)), 10, 40);
       setAsciiFontPx(nextFont);
     };
 

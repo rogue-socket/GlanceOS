@@ -13,6 +13,8 @@ from app.services.cricket import fetch_cricket_scores
 from app.services.news import fetch_news
 from app.services.trending import fetch_github_trending
 from app.services.lofi import get_lofi_scene
+from app.services.calendar import fetch_calendar_events
+from app.services.todoist import fetch_todoist_tasks
 from app.config import get_settings
 from app.ws_manager import manager
 
@@ -105,6 +107,24 @@ async def _push_lofi() -> None:
         logger.debug("Failed to push lofi scene")
 
 
+async def _push_calendar() -> None:
+    try:
+        data = await fetch_calendar_events()
+        _cache["calendar"] = data
+        await manager.broadcast(data)
+    except Exception:
+        logger.debug("Failed to push calendar events")
+
+
+async def _push_todo() -> None:
+    try:
+        data = await fetch_todoist_tasks()
+        _cache["todo"] = data
+        await manager.broadcast(data)
+    except Exception:
+        logger.debug("Failed to push todo tasks")
+
+
 # ── Lifecycle ─────────────────────────────────────────
 
 
@@ -119,6 +139,8 @@ def start_scheduler() -> None:
     scheduler.add_job(_push_news, "interval", minutes=15, id="news", next_run_time=now)
     scheduler.add_job(_push_trending, "interval", minutes=30, id="trending", next_run_time=now)
     scheduler.add_job(_push_lofi, "interval", seconds=30, id="lofi", next_run_time=now)
+    scheduler.add_job(_push_calendar, "interval", minutes=5, id="calendar", next_run_time=now)
+    scheduler.add_job(_push_todo, "interval", minutes=2, id="todo", next_run_time=now)
     scheduler.start()
     logger.info("Scheduler started")
 

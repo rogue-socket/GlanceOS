@@ -1,5 +1,7 @@
 import WidgetCard from '../WidgetCard';
 
+const WEEKS_TO_SHOW = 53;
+
 const EVENT_LABELS = {
   PushEvent: 'PUSH',
   PullRequestEvent: 'PR',
@@ -41,6 +43,14 @@ export default function GitHubWidget({ data }) {
   }
 
   const weeks = data.contributions?.weeks || [];
+  const normalizedWeeks = (() => {
+    const trailing = weeks.slice(-WEEKS_TO_SHOW);
+    if (trailing.length >= WEEKS_TO_SHOW) return trailing;
+
+    const missing = WEEKS_TO_SHOW - trailing.length;
+    const emptyWeek = [0, 0, 0, 0, 0, 0, 0];
+    return [...Array.from({ length: missing }, () => emptyWeek), ...trailing];
+  })();
 
   return (
     <WidgetCard title={`GitHub · ${data.username}`} icon="github" scaleWithCard={false}>
@@ -52,14 +62,24 @@ export default function GitHubWidget({ data }) {
 
         {weeks.length > 0 ? (
           <div className="w-full pb-1">
-            <div className="w-full h-16 flex gap-[2px]">
-              {weeks.map((week, weekIndex) => (
-                <div key={`week-${weekIndex}`} className="flex-1 min-w-0 flex flex-col gap-[2px]">
+            <div
+              className="w-full grid gap-[2px]"
+              style={{ gridTemplateColumns: `repeat(${normalizedWeeks.length}, minmax(0, 1fr))` }}
+            >
+              {normalizedWeeks.map((week, weekIndex) => (
+                <div
+                  key={`week-${weekIndex}`}
+                  className="grid gap-[2px]"
+                  style={{ gridTemplateRows: 'repeat(7, minmax(0, 1fr))' }}
+                >
                   {week.map((level, dayIndex) => (
                     <span
                       key={`${weekIndex}-${dayIndex}`}
-                      className="rounded-[2px] flex-1"
-                      style={{ backgroundColor: contributionColor(level) }}
+                      className="rounded-[2px] block w-full"
+                      style={{
+                        backgroundColor: contributionColor(level),
+                        aspectRatio: '1 / 1',
+                      }}
                       title={`Level ${level}`}
                     />
                   ))}

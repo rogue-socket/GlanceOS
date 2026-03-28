@@ -26,15 +26,26 @@ chmod +x setup.sh
 ./setup.sh
 ```
 
-This creates a Python venv, installs all dependencies, creates `backend/.env`, and prompts for API keys during setup.
+This creates a Python venv, installs all dependencies, creates `backend/.env`, and prompts for API keys plus Google Calendar connection details during setup.
 
 For non-interactive installs, export keys before running setup:
 
 ```bash
 export WEATHER_API_KEY="your_openweathermap_key"
 export GITHUB_TOKEN="your_github_token"
+export TODOIST_API_TOKEN="your_todoist_token"
+export GOOGLE_CALENDAR_ICS_URL="your_google_calendar_ics_url"
+export NEWS_LLM_API_KEY="your_gemini_key"
 ./setup.sh
 ```
+
+When you run the backend with `python run.py`, GlanceOS also tries to find a News LLM key in this order:
+
+1. `NEWS_LLM_API_KEY` in `backend/.env`
+2. `NEWS_LLM_API_KEY`, `GEMINI_API_KEY`, or `GOOGLE_API_KEY` in environment variables
+3. `GEMINI_API_KEY` or `GOOGLE_API_KEY` in `backend/.env`
+
+If none is found and the session is interactive, it prompts for a Gemini key and persists it to `backend/.env`.
 
 Then start both services:
 
@@ -87,17 +98,32 @@ You can still edit `backend/.env` manually:
 |-------------------|--------------------------------------|----------|
 | `WEATHER_API_KEY` | OpenWeatherMap API key               | No*      |
 | `GITHUB_TOKEN`    | GitHub personal access token         | No*      |
+| `TODOIST_API_TOKEN` | Todoist API token                  | No |
+| `TODOIST_PROJECT_ID` | Todoist project ID filter         | No |
+| `GOOGLE_CALENDAR_ICS_URL` | Google Calendar ICS URL (private/public calendars) | No |
+| `GOOGLE_CALENDAR_ID` | Google Calendar ID for API mode | No |
+| `GOOGLE_CALENDAR_API_KEY` | Google Calendar API key for API mode | No |
+| `NEWS_LLM_API_KEY` | API key for LLM-based News crux summaries | No |
+| `NEWS_USE_LLM` | Enable/disable News LLM summaries (`true/false`) | No |
+| `NEWS_LLM_PROVIDER` | LLM provider (`gemini` default) | No |
+| `NEWS_LLM_BASE_URL` | LLM base URL (default Gemini API) | No |
+| `NEWS_LLM_MODEL` | LLM model for News summaries (default `gemini-2.0-flash-lite`) | No |
 | `WEATHER_CITY`    | Default weather city (e.g. Hyderabad,IN) | No |
 | `GITHUB_USERNAME` | GitHub username for activity widget  | No       |
 | `HOST`            | Backend bind address (default `0.0.0.0`) | No   |
 | `PORT`            | Backend port (default `8000`)        | No       |
 | `LOG_LEVEL`       | Backend log verbosity (default `WARNING`) | No |
 
-*Widgets show sample data when keys are not configured.
+*Widgets show offline/unavailable states when required live data cannot be fetched.
 
 Get your keys:
 - Weather: https://openweathermap.org/api (free tier)
 - GitHub: https://github.com/settings/tokens (no scopes needed for public data)
+- Todoist: https://app.todoist.com/app/settings/integrations/developer
+- News LLM (optional): Gemini API key from Google AI Studio
+- Google Calendar:
+        - Recommended: Google Calendar Settings -> Integrate calendar -> Secret address in iCal format -> set `GOOGLE_CALENDAR_ICS_URL`
+        - Alternative: enable Google Calendar API and set `GOOGLE_CALENDAR_ID` + `GOOGLE_CALENDAR_API_KEY`
 
 ## Widgets
 
@@ -108,9 +134,11 @@ Get your keys:
 | Weather    | OpenWeatherMap API    | 10 min          |
 | System     | psutil (CPU/RAM/Disk) | 3s              |
 | Cricket    | ESPN / CricAPI        | 2 min           |
-| News       | Google News RSS       | 15 min          |
+| News       | Google News RSS + optional LLM crux | 15 min |
 | Trending   | GitHub Trending       | 30 min          |
 | GitHub     | GitHub Events API     | 5 min           |
+| Calendar   | Google Calendar (ICS/API) | 5 min       |
+| Todo       | Todoist API           | 2 min           |
 
 All widgets are draggable and resizable. Layouts persist in localStorage.
 

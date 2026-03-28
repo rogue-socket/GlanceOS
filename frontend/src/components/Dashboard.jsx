@@ -13,6 +13,8 @@ import CricketWidget from './widgets/CricketWidget';
 import NewsWidget from './widgets/NewsWidget';
 import TrendingWidget from './widgets/TrendingWidget';
 import LofiWidget from './widgets/LofiWidget';
+import CalendarWidget from './widgets/CalendarWidget';
+import TodoWidget from './widgets/TodoWidget';
 
 const STORAGE_KEY = 'glanceos-layouts';
 
@@ -25,7 +27,9 @@ const DEFAULT_LAYOUTS = {
     { i: 'cricket',  x: 0,  y: 3, w: 4, h: 5, minW: 3, minH: 3 },
     { i: 'news',     x: 4,  y: 3, w: 4, h: 5, minW: 3, minH: 3 },
     { i: 'trending', x: 8,  y: 3, w: 4, h: 5, minW: 3, minH: 3 },
-    { i: 'github',   x: 0,  y: 8, w: 12, h: 3, minW: 4, minH: 2 },
+    { i: 'calendar', x: 0,  y: 8, w: 4, h: 4, minW: 3, minH: 3 },
+    { i: 'github',   x: 4,  y: 8, w: 8, h: 4, minW: 4, minH: 2 },
+    { i: 'todo',     x: 0,  y: 12, w: 12, h: 3, minW: 4, minH: 2 },
   ],
   md: [
     { i: 'clock',    x: 0, y: 0, w: 5, h: 3, minW: 2, minH: 2 },
@@ -36,6 +40,8 @@ const DEFAULT_LAYOUTS = {
     { i: 'news',     x: 5, y: 6, w: 5, h: 5, minW: 3, minH: 3 },
     { i: 'trending', x: 0, y: 11, w: 5, h: 5, minW: 3, minH: 3 },
     { i: 'github',   x: 5, y: 11, w: 5, h: 4, minW: 3, minH: 2 },
+    { i: 'calendar', x: 0, y: 16, w: 10, h: 4, minW: 4, minH: 3 },
+    { i: 'todo',     x: 0, y: 20, w: 10, h: 4, minW: 4, minH: 2 },
   ],
   sm: [
     { i: 'clock',    x: 0, y: 0,  w: 6, h: 3, minW: 2, minH: 2 },
@@ -46,13 +52,31 @@ const DEFAULT_LAYOUTS = {
     { i: 'news',     x: 0, y: 17, w: 6, h: 5, minW: 3, minH: 3 },
     { i: 'trending', x: 0, y: 22, w: 6, h: 5, minW: 3, minH: 3 },
     { i: 'github',   x: 0, y: 27, w: 6, h: 4, minW: 3, minH: 2 },
+    { i: 'calendar', x: 0, y: 31, w: 6, h: 4, minW: 3, minH: 3 },
+    { i: 'todo',     x: 0, y: 35, w: 6, h: 4, minW: 3, minH: 2 },
   ],
 };
 
 function loadLayouts() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      const merged = {};
+
+      for (const bp of Object.keys(DEFAULT_LAYOUTS)) {
+        const defaults = DEFAULT_LAYOUTS[bp] || [];
+        const saved = Array.isArray(parsed?.[bp]) ? parsed[bp] : [];
+        const savedById = new Map(saved.map(item => [item.i, item]));
+
+        merged[bp] = defaults.map(item => ({
+          ...item,
+          ...(savedById.get(item.i) || {}),
+        }));
+      }
+
+      return merged;
+    }
   } catch { /* ignore */ }
   return DEFAULT_LAYOUTS;
 }
@@ -185,6 +209,12 @@ export default function Dashboard() {
           </div>
           <div key="github">
             <GitHubWidget data={widgetData.github} />
+          </div>
+          <div key="calendar">
+            <CalendarWidget data={widgetData.calendar} />
+          </div>
+          <div key="todo">
+            <TodoWidget data={widgetData.todo} />
           </div>
         </Responsive>
       </div>
