@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useState } from 'react';
 import WidgetCard from '../WidgetCard';
 
 const STATUS_COLORS = {
@@ -19,8 +20,67 @@ function statusColor(status) {
   return 'text-glance-muted';
 }
 
+function resolveCricketApiUrl() {
+  const envUrl = import.meta.env.VITE_BACKEND_URL;
+  if (envUrl) {
+    try {
+      const parsed = new URL(envUrl);
+      let path = parsed.pathname.replace(/\/+$/, '');
+      if (path.endsWith('/api')) {
+        return `${parsed.origin}${path}/cricket`;
+      }
+      return `${parsed.origin}${path}/api/cricket`;
+    } catch {
+      // Fall through to same-origin fallback.
+    }
+  }
+
+  if (typeof window !== 'undefined' && window.location?.origin) {
+    return `${window.location.origin}/api/cricket`;
+  }
+
+  return '/api/cricket';
+}
+
 export default function CricketWidget({ data }) {
-  if (!data) {
+  const [apiData, setApiData] = useState(null);
+
+  useEffect(() => {
+    if (data) {
+      setApiData(null);
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadFromApi() {
+      try {
+        const resp = await fetch(resolveCricketApiUrl(), { method: 'GET' });
+        if (!resp.ok) return;
+        const payload = await resp.json();
+        if (cancelled) return;
+        if (payload?.type === 'cricket' && payload?.data) {
+          setApiData(payload.data);
+        } else if (payload && typeof payload === 'object') {
+          setApiData(payload);
+        }
+      } catch {
+        // Ignore network errors; websocket can still recover.
+      }
+    }
+
+    loadFromApi();
+    const timer = setInterval(loadFromApi, 120000);
+
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
+  }, [data]);
+
+  const effectiveData = useMemo(() => data || apiData, [data, apiData]);
+
+  if (!effectiveData) {
     return (
       <WidgetCard title="Cricket" icon="cricket">
         <div className="flex items-center justify-center h-full text-glance-muted text-sm">
@@ -30,7 +90,7 @@ export default function CricketWidget({ data }) {
     );
   }
 
-  const matches = data.matches || [];
+  const matches = effectiveData.matches || [];
 
   return (
     <WidgetCard title="Cricket" icon="cricket">
@@ -76,7 +136,7 @@ export default function CricketWidget({ data }) {
             </div>
           </div>
         ))}
-        {data.source === 'sample' && (
+        {effectiveData.source === 'sample' && (
           <div className="text-[9px] text-glance-muted/50 text-center">
             sample data — configure API for live scores
           </div>

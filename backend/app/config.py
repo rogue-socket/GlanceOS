@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     github_username: str = "octocat"
     weather_api_key: str = ""
     github_token: str = ""
+    cricket_api_key: str = ""
     todoist_api_token: str = ""
     google_calendar_id: str = ""
     google_calendar_api_key: str = ""

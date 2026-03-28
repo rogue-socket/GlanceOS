@@ -124,7 +124,7 @@ async def _push_clock() -> None:
 async def _push_cricket() -> None:
     try:
         _log_api_tick("cricket")
-        data = await fetch_cricket_scores()
+        data = await fetch_cricket_scores(settings.cricket_api_key)
         _cache["cricket"] = data
         await manager.broadcast(data)
     except Exception:

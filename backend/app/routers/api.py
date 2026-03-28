@@ -48,7 +48,7 @@ async def github(username: str = settings.github_username):
 
 @router.get("/cricket")
 async def cricket():
-    return await fetch_cricket_scores()
+    return await fetch_cricket_scores(settings.cricket_api_key)
 
 
 @router.get("/news")
