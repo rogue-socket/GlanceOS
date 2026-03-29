@@ -1,6 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import WidgetCard from '../WidgetCard';
 
+function resolveF1RefreshUrl() {
+  const backendUrl = import.meta.env.VITE_BACKEND_URL;
+  if (backendUrl) {
+    const normalized = String(backendUrl).replace(/\/+$/, '');
+    return normalized.endsWith('/api') ? `${normalized}/f1` : `${normalized}/api/f1`;
+  }
+  return '/api/f1';
+}
+
 function toDateLabel(isoValue) {
   if (!isoValue) return '';
   try {
@@ -14,6 +23,26 @@ function toDateLabel(isoValue) {
     });
   } catch {
     return '';
+  }
+}
+
+function toRefreshLabel(isoValue) {
+  if (!isoValue) return 'Last refreshed: --';
+  try {
+    const date = new Date(isoValue);
+    if (Number.isNaN(date.getTime())) {
+      return 'Last refreshed: --';
+    }
+    return `Last refreshed: ${date.toLocaleString(undefined, {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+    })}`;
+  } catch {
+    return 'Last refreshed: --';
   }
 }
 
@@ -141,6 +170,15 @@ export default function F1Widget({ data }) {
   }, [isRaceWeek, sessions]);
 
   const [selectedView, setSelectedView] = useState('season:drivers');
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [refreshError, setRefreshError] = useState('');
+  const [lastRefreshedAt, setLastRefreshedAt] = useState('');
+
+  useEffect(() => {
+    if (safeData.updated_at) {
+      setLastRefreshedAt(safeData.updated_at);
+    }
+  }, [safeData.updated_at]);
 
   useEffect(() => {
     if (!isRaceWeek) {
@@ -160,6 +198,26 @@ export default function F1Widget({ data }) {
   const selectedSession = isRaceWeek ? sessionMap.get(selectedView) : null;
   const raceLabel = safeData.race_weekend?.race?.name || 'No race this week';
 
+  const handleRefresh = async () => {
+    if (isRefreshing) return;
+
+    setIsRefreshing(true);
+    setRefreshError('');
+    try {
+      const response = await fetch(resolveF1RefreshUrl(), { method: 'GET' });
+      if (!response.ok) {
+        throw new Error(`Refresh failed (${response.status})`);
+      }
+      const payload = await response.json();
+      const refreshedAt = payload?.data?.updated_at;
+      setLastRefreshedAt(refreshedAt || new Date().toISOString());
+    } catch {
+      setRefreshError('Refresh failed. Try again.');
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   if (!data) {
     return (
       <WidgetCard title="F1" icon="f1">
@@ -175,6 +233,20 @@ export default function F1Widget({ data }) {
           <span className="truncate">Season {safeData.season || '-'}, Round {safeData.standings_round || '-'}</span>
           <span className="text-glance-accent/80">{safeData.source || 'f1'}</span>
         </div>
+
+        <div className="flex items-center justify-between gap-2">
+          <div className="text-[10px] text-glance-muted/80">{toRefreshLabel(lastRefreshedAt)}</div>
+          <button
+            type="button"
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            className="px-2 py-1 text-[10px] uppercase tracking-[0.1em] rounded-md border border-glance-border/50 bg-glance-bg/50 text-glance-text hover:border-glance-accent/50 hover:text-glance-accent disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            {isRefreshing ? 'Refreshing...' : 'Refresh'}
+          </button>
+        </div>
+
+        {refreshError && <div className="text-[10px] text-glance-danger/90">{refreshError}</div>}
 
         {isRaceWeek && (
           <div className="space-y-1.5">
